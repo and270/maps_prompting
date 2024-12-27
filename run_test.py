@@ -3,51 +3,60 @@ import pandas as pd
 from datasets import load_dataset
 import openai
 
-#TODO ADICIONAR NOS PROMPTS OU NO SYSTEM PROMPT, 8-SHOT EXEMPLES PARA O MODELO SABER QUE A RESPOSTA FINAL VEM AO FINAL (O EXTRATOR DE RESPOSTA RETIRA O ULTIMO NUMERO)
+#TODO adicionar um 8-shot conforme o GSM8 original
+EIGHT_SHOT_EXAMPLES = """
+See the examples bellow to guide you on how your answer format should be:
+
+"""
 
 # Função para carregar e preparar o dataset
 def prepare_dataset():
     print("Carregando o dataset...")
-    #TODO AJUSTAR COMO CART DO DATASET: https://huggingface.co/datasets/apple/GSM-Symbolic
-    gsm_symbolic = load_dataset("apple/GSM-Symbolic", split="test")
-    df = pd.DataFrame(gsm_symbolic)
+    # Carregar as variantes do GSM-Symbolic
+    ds_main = load_dataset("apple/GSM-Symbolic", name="main", split="test")
+    ds_p1 = load_dataset("apple/GSM-Symbolic", name="p1", split="test")
+    ds_p2 = load_dataset("apple/GSM-Symbolic", name="p2", split="test")
 
-    # Selecionar uma amostra aleatória por "original_id"
-    sample = df.groupby("original_id").sample(n=1, random_state=42)
-    print(f"Dataset carregado com {len(sample)} questões selecionadas.")
-    return sample
+    df_main = pd.DataFrame(ds_main)
+    df_p1 = pd.DataFrame(ds_p1)
+    df_p2 = pd.DataFrame(ds_p2)
+
+    # Selecionar uma amostra aleatória por "original_id" para cada variante
+    sample_main = df_main.groupby("original_id").sample(n=1, random_state=42)
+    sample_p1 = df_p1.groupby("original_id").sample(n=1, random_state=42)
+    sample_p2 = df_p2.groupby("original_id").sample(n=1, random_state=42)
+
+    print(f"Datasets carregados. Tamanhos: main={len(sample_main)}, p1={len(sample_p1)}, p2={len(sample_p2)}.")
+    return sample_main, sample_p1, sample_p2
 
 # Função para gerar prompt usando Chain of Thought (CoT)
 def generate_cot_prompt(question):
-    #TODO Ajustar conforme estudo CoT
-    return f"""
-    You are solving a complex mathematical problem. Think step-by-step and provide intermediate steps for your reasoning.
-
-    Question: {question}
-
-    Provide your reasoning step-by-step:
-    """
+    return f"""{EIGHT_SHOT_EXAMPLES}
+Now, look at this question:
+Q: {question}
+A: Let's think step by step..."""
 
 # Função para gerar prompt inicial para Self-Reflection
 def generate_initial_reflection_prompt(question, answer):
     #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-    return f"""
-    You previously answered this question incorrectly:
-    Question: {question}
-    Your initial answer was: {answer}
-
-    Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
-    """
+    return f"""Question: {question}
+Your initial answer was: {answer}
+You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
+"""
 
 # Função para gerar prompt de re-resposta baseado na reflexão
-def generate_reanswer_prompt(reflection):
+def generate_reanswer_prompt(question, answer, reflection):
     #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-    return f"""
-    Based on the following reflection, solve the problem correctly:
-    Reflection: {reflection}
+    return f"""{EIGHT_SHOT_EXAMPLES}
 
-    Provide your corrected reasoning and answer:
-    """
+Now, look at this question:
+Question: {question}
+Your initial answer was: {answer}
+Based on the following reflection, solve the problem correctly:
+Reflection: {reflection}
+
+Provide your corrected reasoning and answer:
+"""
 
 # Conforme instrução dataset gsm-symbolic
 def extract_answer_gsm_format(response):
@@ -59,17 +68,30 @@ def extract_answer_gsm_format(response):
     return float(extracted_num)
 
 # Função para interagir com os modelos usando OpenRouter API
-def query_model(api_key, prompt, model="gpt-4"):
-    #TODO: ajustar para chamar com OpenRouter
+def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
     try:
-        openai.api_key = api_key
-        response = openai.Completion.create(
-            engine=model, prompt=prompt, max_tokens=256, temperature=0
+        client = openai.OpenAI(
+            api_key=api_key,
+            base_url="https://openrouter.ai/api/v1",
         )
-        return response.choices[0].text.strip()
+
+        chat_completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that can solve math problems step by step.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0, #conforme instrução de reprodução do GSM Symbolic.
+            top_p=1,  #conforme instrução de reprodução do GSM Symbolic.
+        )
+        #print(chat_completion.choices[0].message.content.strip())
+        return chat_completion.choices[0].message.content.strip()
     except Exception as e:
-        print(f"Erro ao consultar o modelo: {e}")
-        return None
+        print(f"Erro ao consultar o modelo {model}: {e}")
+        return ""
 
 # Função para avaliar respostas
 def evaluate_response(response, expected_answer):
@@ -102,9 +124,9 @@ def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
 
         # Reflexão e correção (Self-Reflection)
         #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-        reflection_prompt = generate_initial_reflection_prompt(question, cot_response)
+        reflection_prompt = generate_initial_reflection_prompt(question, base_response)
         reflection = query_model(api_key, reflection_prompt, model)
-        reanswer_prompt = generate_reanswer_prompt(reflection)
+        reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
         reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
         reflection_score = evaluate_response(reflection_response, expected_answer)
 
@@ -135,14 +157,31 @@ def main():
     API_KEY = "sua_api_key_aqui"
 
     #TODO: ajustar para chamar os modelos no projeto de pesquisa, conforme nomeados no OpenRouter
-    model_test_list = ["gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13"]
+    model_test_list = ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"]
     gsm_types = ["gsm8-std", "gsm-symbolic"]
     # Carregar dataset
-    sample = prepare_dataset()
+    sample_main, sample_p1, sample_p2 = prepare_dataset()
 
-    for gsm_type in gsm_types
+    print("Executando testes no dataset main...")
+    for gsm_type in gsm_types:
         for model in model_test_list:
-            results_df = run_gsm8(sample, API_KEY, model, gsm_type)
+            results_df = run_gsm8(sample_main, API_KEY, model, gsm_type)
+    
+            # Salvar resultados
+            save_results(results_df, f"results_{gsm_type}_{model}.csv")
+
+    print("Executando testes no dataset p1...")
+    for gsm_type in gsm_types:
+        for model in model_test_list:
+            results_df = run_gsm8(sample_p1, API_KEY, model, gsm_type)
+    
+            # Salvar resultados
+            save_results(results_df, f"results_{gsm_type}_{model}.csv")
+
+    print("Executando testes no dataset p2...")
+    for gsm_type in gsm_types:
+        for model in model_test_list:
+            results_df = run_gsm8(sample_p2, API_KEY, model, gsm_type)
     
             # Salvar resultados
             save_results(results_df, f"results_{gsm_type}_{model}.csv")
