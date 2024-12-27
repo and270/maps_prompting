@@ -43,6 +43,10 @@ def generate_reanswer_prompt(reflection):
     Provide your corrected reasoning and answer:
     """
 
+def extract_answer_gsm_format(response):
+    #TODO: Implementar a extração da resposta no formato GSM
+    pass
+
 # Função para interagir com os modelos usando OpenRouter API
 def query_model(api_key, prompt, model="gpt-4"):
     try:
@@ -60,33 +64,40 @@ def evaluate_response(response, expected_answer):
     return int(response.strip() == expected_answer.strip())
 
 # Função principal para rodar os experimentos
-def run_experiments(sample, api_key):
+def run_experiments(sample, api_key, model="gpt-4"):
     results = []
     for idx, row in sample.iterrows():
         question = row["original_question"]
         expected_answer = row["original_answer"]
 
-        # Resposta inicial (Baseline)
-        initial_prompt = generate_cot_prompt(question)
-        initial_response = query_model(api_key, initial_prompt)
+        #resultado base sem utilizar nenhuma técnica
+        initial_prompt = ""
+        initial_response = extract_answer_gsm_format(query_model(api_key, initial_prompt, model))
         initial_score = evaluate_response(initial_response, expected_answer)
+
+        # Resposta inicial (Baseline)
+        cot_prompt = generate_cot_prompt(question)
+        cot_response = extract_answer_gsm_format(query_model(api_key, cot_prompt, model))
+        cot_score = evaluate_response(cot_response, expected_answer)
 
         # Reflexão e correção (Self-Reflection)
         reflection_prompt = generate_initial_reflection_prompt(question, initial_response)
-        reflection = query_model(api_key, reflection_prompt)
+        reflection = query_model(api_key, reflection_prompt, model)
         reanswer_prompt = generate_reanswer_prompt(reflection)
-        final_response = query_model(api_key, reanswer_prompt)
-        final_score = evaluate_response(final_response, expected_answer)
+        reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
+        reflection_score = evaluate_response(reflection_response, expected_answer)
 
         # Armazenar resultados
         results.append({
+            "model": model,
             "question": question,
             "expected_answer": expected_answer,
             "initial_response": initial_response,
             "initial_score": initial_score,
-            "reflection": reflection,
-            "final_response": final_response,
-            "final_score": final_score
+            "cot_response": cot_response,
+            "cot_score": cot_score,
+            "reflection_response": reflection_response,
+            "reflection_score": reflection_score,
         })
     return pd.DataFrame(results)
 
@@ -107,17 +118,19 @@ def main():
     # Configuração do API Key do OpenRouter
     API_KEY = "sua_api_key_aqui"
 
+    model_test_list = ["gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13"]
     # Carregar dataset
     sample = prepare_dataset()
 
     # Rodar experimentos
-    results_df = run_experiments(sample, API_KEY)
+    for model in model_test_list:
+        results_df = run_experiments(sample, API_KEY, model)
 
-    # Salvar resultados
-    save_results(results_df)
+        # Salvar resultados
+        save_results(results_df, f"results_{model}.csv")
 
-    # Analisar resultados
-    analyze_results(results_df)
+        # Analisar resultados
+        analyze_results(results_df)
 
 if __name__ == "__main__":
     main()
