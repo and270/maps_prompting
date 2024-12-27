@@ -113,19 +113,19 @@ def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
             #TODO https://huggingface.co/datasets/apple/GSM-Symbolic (ver no cart)
             expected_answer = extract_answer_gsm_format(row["answer"])
         
-        #resultado base sem utilizar nenhuma técnica
+        #resultado base sem utilizar nenhuma técnica (Baseline)
         base_prompt = question
         base_response = extract_answer_gsm_format(query_model(api_key, base_prompt, model))
         base_score = evaluate_response(base_response, expected_answer)
 
-        # Resposta inicial (Baseline)
+        # Resposta com CoT
         cot_prompt = generate_cot_prompt(question)
         cot_response = extract_answer_gsm_format(query_model(api_key, cot_prompt, model))
         cot_score = evaluate_response(cot_response, expected_answer)
 
         # Reflexão e correção (Self-Reflection)
         #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-        reflection_prompt = generate_initial_reflection_prompt(question, base_response)
+        reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
         reflection = query_model(api_key, reflection_prompt, model)
         reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
         reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
