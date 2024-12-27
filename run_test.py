@@ -3,9 +3,12 @@ import pandas as pd
 from datasets import load_dataset
 import openai
 
+#TODO ADICIONAR NOS PROMPTS OU NO SYSTEM PROMPT, 8-SHOT EXEMPLES PARA O MODELO SABER QUE A RESPOSTA FINAL VEM AO FINAL (O EXTRATOR DE RESPOSTA RETIRA O ULTIMO NUMERO)
+
 # Função para carregar e preparar o dataset
 def prepare_dataset():
     print("Carregando o dataset...")
+    #TODO AJUSTAR COMO CART DO DATASET: https://huggingface.co/datasets/apple/GSM-Symbolic
     gsm_symbolic = load_dataset("apple/GSM-Symbolic", split="test")
     df = pd.DataFrame(gsm_symbolic)
 
@@ -46,9 +49,14 @@ def generate_reanswer_prompt(reflection):
     Provide your corrected reasoning and answer:
     """
 
+# Conforme instrução dataset gsm-symbolic
 def extract_answer_gsm_format(response):
-    #TODO: Implementar a extração da resposta no formato GSM
-    pass
+    # Remove commas so for example 5,000 becomes 5000
+    model_resp = model_resp.replace(",", "")
+    # Find the last number
+    extracted_num = re.findall(r"-?\d+\.?\d*", model_resp)[-1]
+    # Use float to ensure 3.0 and 3 are the same.
+    return float(extracted_num)
 
 # Função para interagir com os modelos usando OpenRouter API
 def query_model(api_key, prompt, model="gpt-4"):
@@ -74,11 +82,13 @@ def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
         if type == "gsm8-std":
             question = row["original_question"]
             #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
-            expected_answer = row["original_answer"]
+            #TODO https://huggingface.co/datasets/apple/GSM-Symbolic (ver no cart)
+            expected_answer = extract_answer_gsm_format(row["original_answer"])
         elif type == "gsm-symbolic":
             question = row["question"]
             #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
-            expected_answer = row["answer"]
+            #TODO https://huggingface.co/datasets/apple/GSM-Symbolic (ver no cart)
+            expected_answer = extract_answer_gsm_format(row["answer"])
         
         #resultado base sem utilizar nenhuma técnica
         base_prompt = question
