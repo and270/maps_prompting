@@ -38,10 +38,66 @@ Now, look at this question:
 Q: {question}
 A: Let's think step by step..."""
 
-# Função para gerar prompt inicial para Self-Reflection
+# Função para gerar prompt inicial para Self-Reflection. Utiliza o agente "Composite", com a junção de todas as técnicas (Retry, Keywords, Advice, Explanation, Instructions, Solution)
+# Para melhor encaixe no formato de resposta do GSM8, o exemplo deixa por último a técnica de Solution, que irá imprimir como último número a solução.
+# Além disso, o exemplo foi adaptado, trocando-se a resposta de uma questão de múltipla escolha para a resposta direta do número, conforme formato GSM8
 def generate_initial_reflection_prompt(question, answer):
-    #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-    return f"""Question: {question}
+    return f"""You are an expert in math.
+You have incorrectly answered the following question.
+Your task is to reflect on the problem, your solution, and the correct answer.
+You will then use this information help you answer the same question in the future.
+First, explain why you answered the question incorrectly.
+Second, list the keywords that describe the type of your errors from most general to most specific.
+Third, solve the problem again, step-by-step, based on your knowledge of the correct answer.
+Fourth, create a list of detailed instructions to help you correctly solve this problem in the future.
+Finally, create a list of general advice to help you solve similar types of problems in the future.
+Be concise in your response; however, capture all of the essential information.
+For guidance, I will provide you with a single generic example problem and reflection (below).
+[Example Input]
+Question: What is the product of the number of letters contained in the name of the city
+where Iowa State University is located multiplied by the number of letters
+contained in the name of the state?
+Answer:
+Iowa State University is located in the city of Ames
+ISU is located in the state of Iowa.
+The answer is 32
+---
+[Example Output]
+Explanation:
+I miscalculated the product of the number of letters in the city and state names.
+The gap in my knowledge was not in geography but in basic arithmetic.
+I knew the correct city and state but made a calculation error.
+Error Keywords:
+- Calculation error
+- Arithmetic error
+- Multiplication error
+Instructions:
+1. Identify the city where the university is located.
+2. Identify the state where the university is located.
+3. Count the number of letters in the name of the city.
+4. Count the number of letters in the name of the state.
+5. Multiply the number of letters in the city by the number of letters in the state.
+6. Work step-by-step through your mathematical calculations.
+7. Double-check your calculations to ensure accuracy.
+8. Choose the answer that matches your calculated result.
+Advice:
+- Always read the question carefully and understand the problem.
+- Always decompose complex problems into multiple simple steps.
+- Always think through each subproblem step-by-step.
+- Never skip any steps; be explicit in each step of your reasoning.
+- Always double-check your calculations and final answer.
+- Remember that the product of two numbers is the result of multiplying them together,
+not adding them.
+Solution:
+Iowa State University is located in the city of Ames
+Iowa State University is located in the state of Iowa.
+The city name "Ames" contains 4 letters.
+The state name "Iowa" contains 4 letters.
+The product of 4*4 is 16.
+The answer is 16
+
+Now, look at this question:
+Question: {question}
 Your initial answer was: {answer}
 You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
 """
