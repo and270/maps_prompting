@@ -52,7 +52,6 @@ def extract_answer_gsm_format(response):
 
 # Função para interagir com os modelos usando OpenRouter API
 def query_model(api_key, prompt, model="gpt-4"):
-    #TODO ESTÁ ERRADO!!! PRECISA DE SYSTEM PROMPT E QUESTION
     #TODO: ajustar para chamar com OpenRouter
     try:
         openai.api_key = api_key
@@ -76,9 +75,9 @@ def run_experiments(sample, api_key, model="gpt-4"):
         expected_answer = row["original_answer"]
 
         #resultado base sem utilizar nenhuma técnica
-        initial_prompt = ""
-        initial_response = extract_answer_gsm_format(query_model(api_key, initial_prompt, model))
-        initial_score = evaluate_response(initial_response, expected_answer)
+        base_prompt = question
+        base_response = extract_answer_gsm_format(query_model(api_key, base_prompt, model))
+        base_score = evaluate_response(base_response, expected_answer)
 
         # Resposta inicial (Baseline)
         cot_prompt = generate_cot_prompt(question)
@@ -87,7 +86,7 @@ def run_experiments(sample, api_key, model="gpt-4"):
 
         # Reflexão e correção (Self-Reflection)
         #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-        reflection_prompt = generate_initial_reflection_prompt(question, initial_response)
+        reflection_prompt = generate_initial_reflection_prompt(question, cot_response)
         reflection = query_model(api_key, reflection_prompt, model)
         reanswer_prompt = generate_reanswer_prompt(reflection)
         reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
@@ -99,8 +98,8 @@ def run_experiments(sample, api_key, model="gpt-4"):
             "model": model,
             "question": question,
             "expected_answer": expected_answer,
-            "initial_response": initial_response,
-            "initial_score": initial_score,
+            "base_response": base_response,
+            "base_score": base_score,
             "cot_response": cot_response,
             "cot_score": cot_score,
             "reflection_response": reflection_response,
