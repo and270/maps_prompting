@@ -68,12 +68,18 @@ def evaluate_response(response, expected_answer):
     return int(response.strip() == expected_answer.strip())
 
 # Função principal para rodar os experimentos
-def run_experiments(sample, api_key, model="gpt-4"):
+def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
     results = []
     for idx, row in sample.iterrows():
-        question = row["original_question"]
-        expected_answer = row["original_answer"]
-
+        if type == "gsm8-std":
+            question = row["original_question"]
+            #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
+            expected_answer = row["original_answer"]
+        elif type == "gsm-symbolic":
+            question = row["question"]
+            #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
+            expected_answer = row["answer"]
+        
         #resultado base sem utilizar nenhuma técnica
         base_prompt = question
         base_response = extract_answer_gsm_format(query_model(api_key, base_prompt, model))
@@ -95,6 +101,7 @@ def run_experiments(sample, api_key, model="gpt-4"):
         # Armazenar resultados
         #TODO Melhorar registro de resultados com somas, etc... (desse jeito ele está criando um registro por questão)
         results.append({
+            "type": type,
             "model": model,
             "question": question,
             "expected_answer": expected_answer,
@@ -112,13 +119,6 @@ def save_results(results_df, filename="experiment_results.csv"):
     results_df.to_csv(filename, index=False)
     print(f"Resultados salvos em {filename}")
 
-# Função de análise dos resultados
-def analyze_results(results_df):
-    print("Análise de resultados:")
-    accuracy = results_df[["initial_score", "final_score"]].mean()
-    print("Acurácia média:")
-    print(accuracy)
-
 # Pipeline principal
 def main():
     # Configuração do API Key do OpenRouter
@@ -126,18 +126,17 @@ def main():
 
     #TODO: ajustar para chamar os modelos no projeto de pesquisa, conforme nomeados no OpenRouter
     model_test_list = ["gpt-4", "gpt-4o", "gpt-4o-mini", "gpt-4o-2024-08-06", "gpt-4o-2024-05-13"]
+    gsm_types = ["gsm8-std", "gsm-symbolic"]
     # Carregar dataset
     sample = prepare_dataset()
 
-    # Rodar experimentos
-    for model in model_test_list:
-        results_df = run_experiments(sample, API_KEY, model)
+    for gsm_type in gsm_types
+        for model in model_test_list:
+            results_df = run_gsm8(sample, API_KEY, model, gsm_type)
+    
+            # Salvar resultados
+            save_results(results_df, f"results_{gsm_type}_{model}.csv")
 
-        # Salvar resultados
-        save_results(results_df, f"results_{model}.csv")
-
-        # Analisar resultados
-        analyze_results(results_df)
 
 if __name__ == "__main__":
     main()
