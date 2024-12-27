@@ -52,6 +52,7 @@ def extract_answer_gsm_format(response):
 
 # Função para interagir com os modelos usando OpenRouter API
 def query_model(api_key, prompt, model="gpt-4"):
+    #TODO ESTÁ ERRADO!!! PRECISA DE SYSTEM PROMPT E QUESTION
     #TODO: ajustar para chamar com OpenRouter
     try:
         openai.api_key = api_key
