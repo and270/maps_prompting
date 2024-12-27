@@ -124,12 +124,16 @@ def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
         cot_score = evaluate_response(cot_response, expected_answer)
 
         # Reflexão e correção (Self-Reflection)
-        #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
-        reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
-        reflection = query_model(api_key, reflection_prompt, model)
-        reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
-        reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
-        reflection_score = evaluate_response(reflection_response, expected_answer)
+        if cot_score == 1:
+            reflection_response = cot_response
+            reflection_score = cot_score
+        else: #segundo o paper do Self-Reflection, a técnica somente é aplicada quando a resposta inicial não é correta
+            #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
+            reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
+            reflection = query_model(api_key, reflection_prompt, model)
+            reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
+            reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
+            reflection_score = evaluate_response(reflection_response, expected_answer)
 
         # Armazenar resultados
         #TODO Melhorar registro de resultados com somas, etc... (desse jeito ele está criando um registro por questão)
