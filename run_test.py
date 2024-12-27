@@ -2,6 +2,7 @@
 import pandas as pd
 from datasets import load_dataset
 import openai
+import re
 
 #TODO adicionar um 8-shot conforme o GSM8 original
 EIGHT_SHOT_EXAMPLES = """
