@@ -17,9 +17,9 @@ def prepare_dataset():
     ds_p1 = load_dataset("apple/GSM-Symbolic", name="p1", split="test")
     ds_p2 = load_dataset("apple/GSM-Symbolic", name="p2", split="test")
 
-    df_main = pd.DataFrame(ds_main)
-    df_p1 = pd.DataFrame(ds_p1)
-    df_p2 = pd.DataFrame(ds_p2)
+    df_main = pd.DataFrame(ds_main) #dataset base do GSM Symbolic, com trocas de elementos conforme template
+    df_p1 = pd.DataFrame(ds_p1) # dataset p1 do GSM Symbolic, que inclui 1 cláusula adicional à questão, aumentando o nível de dificuldade.
+    df_p2 = pd.DataFrame(ds_p2) # dataset p1 do GSM Symbolic, que inclui 2 cláusulas adicionais à questão, aumentando o nível de dificuldade.
 
     # Selecionar uma amostra aleatória por "original_id" para cada variante
     sample_main = df_main.groupby("original_id").sample(n=1, random_state=42)
@@ -31,6 +31,7 @@ def prepare_dataset():
 
 # Função para gerar prompt usando Chain of Thought (CoT)
 def generate_cot_prompt(question):
+    #Conforme paper do CoT, a tpecnica envolve o use de few shot com respostas em cadeia de pensamento e estímulo para desenvolver a resposta passo a passo:
     return f"""{EIGHT_SHOT_EXAMPLES}
 Now, look at this question:
 Q: {question}
@@ -168,7 +169,7 @@ def main():
             results_df = run_gsm8(sample_main, API_KEY, model, gsm_type)
     
             # Salvar resultados
-            save_results(results_df, f"results_{gsm_type}_{model}.csv")
+            save_results(results_df, f"results_dataset_main_{gsm_type}_{model}.csv")
 
     print("Executando testes no dataset p1...")
     for gsm_type in gsm_types:
@@ -176,7 +177,7 @@ def main():
             results_df = run_gsm8(sample_p1, API_KEY, model, gsm_type)
     
             # Salvar resultados
-            save_results(results_df, f"results_{gsm_type}_{model}.csv")
+            save_results(results_df, f"results_dataset_p1_{gsm_type}_{model}.csv")
 
     print("Executando testes no dataset p2...")
     for gsm_type in gsm_types:
@@ -184,7 +185,7 @@ def main():
             results_df = run_gsm8(sample_p2, API_KEY, model, gsm_type)
     
             # Salvar resultados
-            save_results(results_df, f"results_{gsm_type}_{model}.csv")
+            save_results(results_df, f"results_dataset_p2_{gsm_type}_{model}.csv")
 
 
 if __name__ == "__main__":
