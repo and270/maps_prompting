@@ -3,20 +3,75 @@ import pandas as pd
 from datasets import load_dataset
 import openai
 import re
+import os
 
-#TODO adicionar um 8-shot conforme o GSM8 original
 EIGHT_SHOT_EXAMPLES = """
 See the examples bellow to guide you on how your answer format should be:
 
+Q: If John has 3 apples and buys 2 more, how many apples does he have now?
+A: Let's think step by step.
+John starts with 3 apples.
+He buys 2 more apples.
+So, the total number of apples is 3 + 2 = 5.
+The answer is 5.
+
+Q: Sarah had 10 candies. She gave 4 to her friend. How many candies does she have left?
+A: Let's think step by step.
+Sarah starts with 10 candies.
+She gives 4 candies to her friend.
+So, the number of candies left is 10 - 4 = 6.
+The answer is 6.
+
+Q: There are 5 baskets, each with 3 oranges. How many oranges are there in total?
+A: Let's think step by step.
+Each basket has 3 oranges.
+There are 5 baskets.
+So, the total number of oranges is 5 * 3 = 15.
+The answer is 15.
+
+Q: A baker has 24 cupcakes and packs them equally into 6 boxes. How many cupcakes are in each box?
+A: Let's think step by step.
+The baker has 24 cupcakes.
+He packs them into 6 boxes equally.
+So, each box contains 24 / 6 = 4 cupcakes.
+The answer is 4.
+
+Q: Emily read 7 pages of a book on Monday and 9 pages on Tuesday. How many pages did she read in total?
+A: Let's think step by step.
+Emily read 7 pages on Monday.
+She read 9 pages on Tuesday.
+So, the total number of pages read is 7 + 9 = 16.
+The answer is 16.
+
+Q: Tom had 15 marbles. He lost 7 of them. How many marbles does he have now?
+A: Let's think step by step.
+Tom starts with 15 marbles.
+He loses 7 marbles.
+So, the number of marbles left is 15 - 7 = 8.
+The answer is 8.
+
+Q: There are 4 packs of pencils, each containing 6 pencils. How many pencils are there in total?
+A: Let's think step by step.
+Each pack contains 6 pencils.
+There are 4 packs.
+So, the total number of pencils is 4 * 6 = 24.
+The answer is 24.
+
+Q: A gardener has 36 flowers and plants them equally in 9 rows. How many flowers are in each row?
+A: Let's think step by step.
+The gardener has 36 flowers.
+He plants them equally in 9 rows.
+So, each row contains 36 / 9 = 4 flowers.
+The answer is 4.
 """
 
 # Função para carregar e preparar o dataset
 def prepare_dataset():
     print("Carregando o dataset...")
     # Carregar as variantes do GSM-Symbolic
-    ds_main = load_dataset("apple/GSM-Symbolic", name="main", split="test")
-    ds_p1 = load_dataset("apple/GSM-Symbolic", name="p1", split="test")
-    ds_p2 = load_dataset("apple/GSM-Symbolic", name="p2", split="test")
+    ds_main = load_dataset("apple/GSM-Symbolic", "main")
+    ds_p1 = load_dataset("apple/GSM-Symbolic", "p1")
+    ds_p2 = load_dataset("apple/GSM-Symbolic", "p2")
 
     df_main = pd.DataFrame(ds_main) #dataset base do GSM Symbolic, com trocas de elementos conforme template
     df_p1 = pd.DataFrame(ds_p1) # dataset p1 do GSM Symbolic, que inclui 1 cláusula adicional à questão, aumentando o nível de dificuldade.
@@ -104,16 +159,17 @@ You previously answered this question incorrectly. Reflect on why your answer wa
 
 # Função para gerar prompt de re-resposta baseado na reflexão
 def generate_reanswer_prompt(question, answer, reflection):
-    #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
+    #Conforme paper do Self-Reflection, mas ajustado para o formato GSM8
     return f"""{EIGHT_SHOT_EXAMPLES}
 
 Now, look at this question:
 Question: {question}
 Your initial answer was: {answer}
-Based on the following reflection, solve the problem correctly:
+You previously answered this question incorrectly.
+Then you reflected on the problem, your solution, and the correct answer::
 Reflection: {reflection}
 
-Provide your corrected reasoning and answer:
+Provide your corrected reasoning and answer in the examples format.
 """
 
 # Conforme instrução dataset gsm-symbolic
@@ -156,44 +212,44 @@ def evaluate_response(response, expected_answer):
     return int(response.strip() == expected_answer.strip())
 
 # Função principal para rodar os experimentos
-def run_gsm8(sample, api_key, model="gpt-4", type="gsm8-std"):
+def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gsm8-std"):
     results = []
     for idx, row in sample.iterrows():
         if type == "gsm8-std":
             question = row["original_question"]
-            #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
-            #TODO https://huggingface.co/datasets/apple/GSM-Symbolic (ver no cart)
             expected_answer = extract_answer_gsm_format(row["original_answer"])
         elif type == "gsm-symbolic":
             question = row["question"]
-            #TODO VERIFICAR ISSO, PORQUE PODE SER QUE, NO DATASET, ESSE CAMPO SEJA DA RESPOSTA OBTIDA NO TESTE E NAO A CORRETA
-            #TODO https://huggingface.co/datasets/apple/GSM-Symbolic (ver no cart)
             expected_answer = extract_answer_gsm_format(row["answer"])
+        
+        print("Expected answer: ", expected_answer)
         
         #resultado base sem utilizar nenhuma técnica (Baseline)
         base_prompt = question
         base_response = extract_answer_gsm_format(query_model(api_key, base_prompt, model))
         base_score = evaluate_response(base_response, expected_answer)
 
+        print(f"Base response: {base_response} - Score: {base_score}")
+
         # Resposta com CoT
         cot_prompt = generate_cot_prompt(question)
         cot_response = extract_answer_gsm_format(query_model(api_key, cot_prompt, model))
         cot_score = evaluate_response(cot_response, expected_answer)
 
+        print(f"COT response: {cot_response} - Score: {cot_score}")
         # Reflexão e correção (Self-Reflection)
         if cot_score == 1:
             reflection_response = cot_response
             reflection_score = cot_score
         else: #segundo o paper do Self-Reflection, a técnica somente é aplicada quando a resposta inicial não é correta
-            #TODO Ajustar conforme estudo Self-Reflection e técnicas de Self-Reflection
             reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
             reflection = query_model(api_key, reflection_prompt, model)
             reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
             reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
             reflection_score = evaluate_response(reflection_response, expected_answer)
 
-        # Armazenar resultados
-        #TODO Melhorar registro de resultados com somas, etc... (desse jeito ele está criando um registro por questão)
+            print(f"Reflection response: {reflection_response} - Score: {reflection_score}")
+
         results.append({
             "type": type,
             "model": model,
@@ -216,7 +272,7 @@ def save_results(results_df, filename="experiment_results.csv"):
 # Pipeline principal
 def main():
     # Configuração do API Key do OpenRouter
-    API_KEY = "sua_api_key_aqui"
+    API_KEY = os.getenv("OPENROUTER_API_KEY")
 
     #TODO: ajustar para chamar os modelos no projeto de pesquisa, conforme nomeados no OpenRouter
     model_test_list = ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"]
