@@ -4,6 +4,10 @@ from datasets import load_dataset
 import openai
 import re
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 EIGHT_SHOT_EXAMPLES = """
 See the examples bellow to guide you on how your answer format should be:
@@ -73,9 +77,10 @@ def prepare_dataset():
     ds_p1 = load_dataset("apple/GSM-Symbolic", "p1")
     ds_p2 = load_dataset("apple/GSM-Symbolic", "p2")
 
-    df_main = pd.DataFrame(ds_main) #dataset base do GSM Symbolic, com trocas de elementos conforme template
-    df_p1 = pd.DataFrame(ds_p1) # dataset p1 do GSM Symbolic, que inclui 1 cláusula adicional à questão, aumentando o nível de dificuldade.
-    df_p2 = pd.DataFrame(ds_p2) # dataset p1 do GSM Symbolic, que inclui 2 cláusulas adicionais à questão, aumentando o nível de dificuldade.
+    # Convert to DataFrame using the 'test' split
+    df_main = pd.DataFrame(ds_main['test'])  # Specify the 'test' split
+    df_p1 = pd.DataFrame(ds_p1['test'])
+    df_p2 = pd.DataFrame(ds_p2['test'])
 
     # Selecionar uma amostra aleatória por "original_id" para cada variante
     sample_main = df_main.groupby("original_id").sample(n=1, random_state=42)
@@ -175,9 +180,9 @@ Provide your corrected reasoning and answer in the examples format.
 # Conforme instrução dataset gsm-symbolic
 def extract_answer_gsm_format(response):
     # Remove commas so for example 5,000 becomes 5000
-    model_resp = model_resp.replace(",", "")
+    response = response.replace(",", "")
     # Find the last number
-    extracted_num = re.findall(r"-?\d+\.?\d*", model_resp)[-1]
+    extracted_num = re.findall(r"-?\d+\.?\d*", response)[-1]
     # Use float to ensure 3.0 and 3 are the same.
     return float(extracted_num)
 
@@ -209,7 +214,11 @@ def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
 
 # Função para avaliar respostas
 def evaluate_response(response, expected_answer):
-    return int(response.strip() == expected_answer.strip())
+    try:
+        # Convert both to float for comparison
+        return int(float(response) == float(expected_answer))
+    except (ValueError, TypeError):
+        return 0
 
 # Função principal para rodar os experimentos
 def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gsm8-std"):
