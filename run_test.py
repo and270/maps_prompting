@@ -203,6 +203,7 @@ def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
         client = openai.OpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1",
+            timeout=120.0  # 120 seconds timeout
         )
 
         chat_completion = client.chat.completions.create(
@@ -217,11 +218,11 @@ def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
             temperature=0, #conforme instrução de reprodução do GSM Symbolic.
             top_p=1,  #conforme instrução de reprodução do GSM Symbolic.
         )
-        #print(chat_completion.choices[0].message.content.strip())
-        return chat_completion.choices[0].message.content.strip()
+        response = chat_completion.choices[0].message.content.strip()
+        return response if response else None
     except Exception as e:
         print(f"Erro ao consultar o modelo {model}: {e}")
-        return ""
+        return None
 
 # Função para avaliar respostas
 def evaluate_response(response, expected_answer):
@@ -251,16 +252,26 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
         #resultado base sem utilizar nenhuma técnica (Baseline)
         base_prompt = question
         base_full_response = query_model(api_key, base_prompt, model)
-        base_response = extract_answer_gsm_format(base_full_response)
-        base_score = evaluate_response(base_response, expected_answer)
+        if base_full_response is None:
+            print("Timeout or error in base response")
+            base_response = None
+            base_score = 0
+        else:
+            base_response = extract_answer_gsm_format(base_full_response)
+            base_score = evaluate_response(base_response, expected_answer)
 
         print(f"Base response: {base_response} - Score: {base_score}")
 
         # Resposta com CoT
         cot_prompt = generate_cot_prompt(question)
         cot_full_response = query_model(api_key, cot_prompt, model)
-        cot_response = extract_answer_gsm_format(cot_full_response)
-        cot_score = evaluate_response(cot_response, expected_answer)
+        if cot_full_response is None:
+            print("Timeout or error in CoT response")
+            cot_response = None
+            cot_score = 0
+        else:
+            cot_response = extract_answer_gsm_format(cot_full_response)
+            cot_score = evaluate_response(cot_response, expected_answer)
 
         print(f"COT response: {cot_response} - Score: {cot_score}")
         # Reflexão e correção (Self-Reflection)
@@ -269,12 +280,23 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
             reflection_score = cot_score
             reflection_full_response = ""
         else: #segundo o paper do Self-Reflection, a técnica somente é aplicada quando a resposta inicial não é correta
-            reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
-            reflection = query_model(api_key, reflection_prompt, model)
-            reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
-            reflection_full_response = query_model(api_key, reanswer_prompt, model)
-            reflection_response = extract_answer_gsm_format(reflection_full_response)
-            reflection_score = evaluate_response(reflection_response, expected_answer)
+            initial_reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
+            initial_reflection_full_response = query_model(api_key, initial_reflection_prompt, model)
+            if initial_reflection_full_response is None:
+                print("Timeout or error in reflection")
+                reflection_full_response = None
+                reflection_response = None
+                reflection_score = 0
+            else:
+                reflection_prompt = generate_reanswer_prompt(question, base_response, reflection_full_response)
+                reflection_full_response = query_model(api_key, reflection_prompt, model)
+                if reflection_full_response is None:
+                    print("Timeout or error in reflection")
+                    reflection_response = None
+                    reflection_score = 0
+                else:
+                    reflection_response = extract_answer_gsm_format(reflection_full_response)
+                    reflection_score = evaluate_response(reflection_response, expected_answer)
 
             print(f"Reflection response: {reflection_response} - Score: {reflection_score}")
 
@@ -310,40 +332,81 @@ def main():
     # Configuração do API Key do OpenRouter
     API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+    # Load dataset
+    sample_main, sample_p1, sample_p2 = prepare_dataset()
+
     # Create results directory
     results_dir = "results"
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    model_test_list = ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"]
-    gsm_types = ["gsm8-std", "gsm-symbolic"]
-    
-    # Carregar dataset
-    sample_main, sample_p1, sample_p2 = prepare_dataset()
+    # User input for dataset type
+    print("\nSelect dataset type:")
+    print("1. Main dataset")
+    print("2. P1 dataset")
+    print("3. P2 dataset")
+    while True:
+        dataset_choice = input("Enter your choice (1-3): ").strip()
+        if dataset_choice in ['1', '2', '3']:
+            break
+        print("Invalid choice. Please select 1, 2, or 3.")
 
-    print("Executando testes no dataset main...")
-    for gsm_type in gsm_types:
-        for model in model_test_list:
-            # Use a safe filename by replacing / with _
-            safe_model_name = model.replace("/", "_")
-            results_df = run_gsm8(sample_main, API_KEY, model, gsm_type)
-            save_results(results_df, f"{results_dir}/results_dataset_main_{gsm_type}_{safe_model_name}.csv")
-    
-    print("Executando testes no dataset p1...")
-    for gsm_type in gsm_types:
-        for model in model_test_list:
-            # Use a safe filename by replacing / with _
-            safe_model_name = model.replace("/", "_")
-            results_df = run_gsm8(sample_p1, API_KEY, model, gsm_type)
-            save_results(results_df, f"{results_dir}/results_dataset_p1_{gsm_type}_{safe_model_name}.csv")
+    # User input for GSM type
+    print("\nSelect GSM type:")
+    print("1. Regular GSM8")
+    print("2. GSM Symbolic")
+    while True:
+        gsm_choice = input("Enter your choice (1-2): ").strip()
+        if gsm_choice in ['1', '2']:
+            break
+        print("Invalid choice. Please select 1 or 2.")
 
-    print("Executando testes no dataset p2...")
-    for gsm_type in gsm_types:
-        for model in model_test_list:
-            # Use a safe filename by replacing / with _
-            safe_model_name = model.replace("/", "_")
-            results_df = run_gsm8(sample_p2, API_KEY, model, gsm_type)
-            save_results(results_df, f"{results_dir}/results_dataset_p2_{gsm_type}_{safe_model_name}.csv")
+    # User input for model
+    print("\nSelect model:")
+    print("1. meta-llama/llama-3.1-8b-instruct")
+    print("2. meta-llama/llama-3.1-70b-instruct")
+    print("3. Enter custom model")
+    while True:
+        model_choice = input("Enter your choice (1-3): ").strip()
+        if model_choice in ['1', '2', '3']:
+            break
+        print("Invalid choice. Please select 1, 2, or 3.")
+
+    # Map choices to values
+    dataset_map = {
+        '1': ('main', sample_main),
+        '2': ('p1', sample_p1),
+        '3': ('p2', sample_p2)
+    }
+    gsm_map = {
+        '1': 'gsm8-std',
+        '2': 'gsm-symbolic'
+    }
+    model_map = {
+        '1': 'meta-llama/llama-3.1-8b-instruct',
+        '2': 'meta-llama/llama-3.1-70b-instruct'
+    }
+
+    # Get dataset name and sample
+    dataset_name, sample = dataset_map[dataset_choice]
+    gsm_type = gsm_map[gsm_choice]
+
+    # Get model
+    if model_choice == '3':
+        model = input("\nEnter the model name: ").strip()
+    else:
+        model = model_map[model_choice]
+
+    # Execute test with selected parameters
+    print(f"\nExecuting test with:")
+    print(f"Dataset: {dataset_name}")
+    print(f"GSM type: {gsm_type}")
+    print(f"Model: {model}")
+
+    # Use a safe filename by replacing / with _
+    safe_model_name = model.replace("/", "_")
+    results_df = run_gsm8(sample, API_KEY, model, gsm_type)
+    save_results(results_df, f"{results_dir}/results_dataset_{dataset_name}_{gsm_type}_{safe_model_name}.csv")
 
 
 if __name__ == "__main__":
