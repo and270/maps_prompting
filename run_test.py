@@ -70,25 +70,19 @@ The answer is 4.
 """
 
 # Função para carregar e preparar o dataset
-def prepare_dataset():
-    print("Carregando o dataset...")
-    # Carregar as variantes do GSM-Symbolic
-    ds_main = load_dataset("apple/GSM-Symbolic", "main")
-    ds_p1 = load_dataset("apple/GSM-Symbolic", "p1")
-    ds_p2 = load_dataset("apple/GSM-Symbolic", "p2")
+def prepare_dataset(dataset_type='main'):
+    print(f"Carregando o dataset {dataset_type}...")
+    # Load only the selected dataset variant
+    ds = load_dataset("apple/GSM-Symbolic", dataset_type)
 
     # Convert to DataFrame using the 'test' split
-    df_main = pd.DataFrame(ds_main['test'])  # Specify the 'test' split
-    df_p1 = pd.DataFrame(ds_p1['test'])
-    df_p2 = pd.DataFrame(ds_p2['test'])
+    df = pd.DataFrame(ds['test'])
 
-    # Selecionar uma amostra aleatória por "original_id" para cada variante
-    sample_main = df_main.groupby("original_id").sample(n=1, random_state=42)
-    sample_p1 = df_p1.groupby("original_id").sample(n=1, random_state=42)
-    sample_p2 = df_p2.groupby("original_id").sample(n=1, random_state=42)
+    # Select a random sample by "original_id"
+    sample = df.groupby("original_id").sample(n=1, random_state=42)
 
-    print(f"Datasets carregados. Tamanhos: main={len(sample_main)}, p1={len(sample_p1)}, p2={len(sample_p2)}.")
-    return sample_main, sample_p1, sample_p2
+    print(f"Dataset {dataset_type} carregado. Tamanho: {len(sample)}.")
+    return sample
 
 # Função para gerar prompt usando Chain of Thought (CoT)
 def generate_cot_prompt(question):
@@ -203,7 +197,7 @@ def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
         client = openai.OpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1",
-            timeout=120.0  # 120 seconds timeout
+            timeout=180.0 
         )
 
         chat_completion = client.chat.completions.create(
@@ -332,9 +326,6 @@ def main():
     # Configuração do API Key do OpenRouter
     API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-    # Load dataset
-    sample_main, sample_p1, sample_p2 = prepare_dataset()
-
     # Create results directory
     results_dir = "results"
     if not os.path.exists(results_dir):
@@ -374,9 +365,9 @@ def main():
 
     # Map choices to values
     dataset_map = {
-        '1': ('main', sample_main),
-        '2': ('p1', sample_p1),
-        '3': ('p2', sample_p2)
+        '1': 'main',
+        '2': 'p1',
+        '3': 'p2'
     }
     gsm_map = {
         '1': 'gsm8-std',
@@ -387,10 +378,12 @@ def main():
         '2': 'meta-llama/llama-3.1-70b-instruct'
     }
 
-    # Get dataset name and sample
-    dataset_name, sample = dataset_map[dataset_choice]
-    gsm_type = gsm_map[gsm_choice]
-
+    # Get dataset name
+    dataset_name = dataset_map[dataset_choice]
+    
+    # Load only the selected dataset
+    sample = prepare_dataset(dataset_name)
+    
     # Get model
     if model_choice == '3':
         model = input("\nEnter the model name: ").strip()
@@ -400,13 +393,13 @@ def main():
     # Execute test with selected parameters
     print(f"\nExecuting test with:")
     print(f"Dataset: {dataset_name}")
-    print(f"GSM type: {gsm_type}")
+    print(f"GSM type: {gsm_map[gsm_choice]}")
     print(f"Model: {model}")
 
     # Use a safe filename by replacing / with _
     safe_model_name = model.replace("/", "_")
-    results_df = run_gsm8(sample, API_KEY, model, gsm_type)
-    save_results(results_df, f"{results_dir}/results_dataset_{dataset_name}_{gsm_type}_{safe_model_name}.csv")
+    results_df = run_gsm8(sample, API_KEY, model, gsm_map[gsm_choice])
+    save_results(results_df, f"{results_dir}/results_dataset_{dataset_name}_{gsm_map[gsm_choice]}_{safe_model_name}.csv")
 
 
 if __name__ == "__main__":
