@@ -179,12 +179,23 @@ Provide your corrected reasoning and answer in the examples format.
 
 # Conforme instrução dataset gsm-symbolic
 def extract_answer_gsm_format(response):
-    # Remove commas so for example 5,000 becomes 5000
-    response = response.replace(",", "")
-    # Find the last number
-    extracted_num = re.findall(r"-?\d+\.?\d*", response)[-1]
-    # Use float to ensure 3.0 and 3 are the same.
-    return float(extracted_num)
+    try:
+        if not response:  # Handle empty responses
+            return None
+        
+        # Remove commas so for example 5,000 becomes 5000
+        response = response.replace(",", "")
+        # Find all numbers in the response
+        numbers = re.findall(r"-?\d+\.?\d*", response)
+        
+        if not numbers:  # If no numbers found
+            return None
+            
+        # Return the last number found
+        return float(numbers[-1])
+    except Exception as e:
+        print(f"Error in extract_answer_gsm_format: {e}")
+        return None
 
 # Função para interagir com os modelos usando OpenRouter API
 def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
@@ -215,9 +226,13 @@ def query_model(api_key, prompt, model="meta-llama/llama-3.1-8b-instruct"):
 # Função para avaliar respostas
 def evaluate_response(response, expected_answer):
     try:
+        # If response is None, it means there was an error in extraction
+        if response is None:
+            return 0
         # Convert both to float for comparison
         return int(float(response) == float(expected_answer))
-    except (ValueError, TypeError):
+    except Exception as e:
+        print(f"Error in evaluate_response: {e}")
         return 0
 
 # Função principal para rodar os experimentos
@@ -235,14 +250,16 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
         
         #resultado base sem utilizar nenhuma técnica (Baseline)
         base_prompt = question
-        base_response = extract_answer_gsm_format(query_model(api_key, base_prompt, model))
+        base_full_response = query_model(api_key, base_prompt, model)
+        base_response = extract_answer_gsm_format(base_full_response)
         base_score = evaluate_response(base_response, expected_answer)
 
         print(f"Base response: {base_response} - Score: {base_score}")
 
         # Resposta com CoT
         cot_prompt = generate_cot_prompt(question)
-        cot_response = extract_answer_gsm_format(query_model(api_key, cot_prompt, model))
+        cot_full_response = query_model(api_key, cot_prompt, model)
+        cot_response = extract_answer_gsm_format(cot_full_response)
         cot_score = evaluate_response(cot_response, expected_answer)
 
         print(f"COT response: {cot_response} - Score: {cot_score}")
@@ -250,11 +267,13 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
         if cot_score == 1:
             reflection_response = cot_response
             reflection_score = cot_score
+            reflection_full_response = ""
         else: #segundo o paper do Self-Reflection, a técnica somente é aplicada quando a resposta inicial não é correta
             reflection_prompt = generate_initial_reflection_prompt(question, cot_response) #Conforme paper do Self-Reflection, a reflexão vem sobre a resposta em CoT.
             reflection = query_model(api_key, reflection_prompt, model)
             reanswer_prompt = generate_reanswer_prompt(question, base_response, reflection)
-            reflection_response = extract_answer_gsm_format(query_model(api_key, reanswer_prompt, model))
+            reflection_full_response = query_model(api_key, reanswer_prompt, model)
+            reflection_response = extract_answer_gsm_format(reflection_full_response)
             reflection_score = evaluate_response(reflection_response, expected_answer)
 
             print(f"Reflection response: {reflection_response} - Score: {reflection_score}")
@@ -264,10 +283,13 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
             "model": model,
             "question": question,
             "expected_answer": expected_answer,
+            "base_full_response": base_full_response,   
             "base_response": base_response,
             "base_score": base_score,
+            "cot_full_response": cot_full_response,
             "cot_response": cot_response,
             "cot_score": cot_score,
+            "reflection_full_response": reflection_full_response,
             "reflection_response": reflection_response,
             "reflection_score": reflection_score,
         })
@@ -275,6 +297,11 @@ def run_gsm8(sample, api_key, model="meta-llama/llama-3.1-8b-instruct", type="gs
 
 # Função para salvar resultados
 def save_results(results_df, filename="experiment_results.csv"):
+    # Create directory if it doesn't exist
+    directory = os.path.dirname(filename)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+        
     results_df.to_csv(filename, index=False)
     print(f"Resultados salvos em {filename}")
 
@@ -283,35 +310,40 @@ def main():
     # Configuração do API Key do OpenRouter
     API_KEY = os.getenv("OPENROUTER_API_KEY")
 
-    #TODO: ajustar para chamar os modelos no projeto de pesquisa, conforme nomeados no OpenRouter
+    # Create results directory
+    results_dir = "results"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
     model_test_list = ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"]
     gsm_types = ["gsm8-std", "gsm-symbolic"]
+    
     # Carregar dataset
     sample_main, sample_p1, sample_p2 = prepare_dataset()
 
     print("Executando testes no dataset main...")
     for gsm_type in gsm_types:
         for model in model_test_list:
+            # Use a safe filename by replacing / with _
+            safe_model_name = model.replace("/", "_")
             results_df = run_gsm8(sample_main, API_KEY, model, gsm_type)
+            save_results(results_df, f"{results_dir}/results_dataset_main_{gsm_type}_{safe_model_name}.csv")
     
-            # Salvar resultados
-            save_results(results_df, f"results_dataset_main_{gsm_type}_{model}.csv")
-
     print("Executando testes no dataset p1...")
     for gsm_type in gsm_types:
         for model in model_test_list:
+            # Use a safe filename by replacing / with _
+            safe_model_name = model.replace("/", "_")
             results_df = run_gsm8(sample_p1, API_KEY, model, gsm_type)
-    
-            # Salvar resultados
-            save_results(results_df, f"results_dataset_p1_{gsm_type}_{model}.csv")
+            save_results(results_df, f"{results_dir}/results_dataset_p1_{gsm_type}_{safe_model_name}.csv")
 
     print("Executando testes no dataset p2...")
     for gsm_type in gsm_types:
         for model in model_test_list:
+            # Use a safe filename by replacing / with _
+            safe_model_name = model.replace("/", "_")
             results_df = run_gsm8(sample_p2, API_KEY, model, gsm_type)
-    
-            # Salvar resultados
-            save_results(results_df, f"results_dataset_p2_{gsm_type}_{model}.csv")
+            save_results(results_df, f"{results_dir}/results_dataset_p2_{gsm_type}_{safe_model_name}.csv")
 
 
 if __name__ == "__main__":
