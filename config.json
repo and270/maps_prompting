@@ -1,5 +1,8 @@
 {
-    "datasets": ["main", "p1", "p2"],
-    "gsm_types": ["gsm8-std", "gsm-symbolic"],
-    "models": ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.3-70b-instruct", "openai/gpt-4o-mini-2024-07-18"]
+    "datasets": ["p2"],
+    "gsm_types": ["gsm-symbolic"],
+    "models": ["meta-llama/llama-3.3-70b-instruct"],
+    "use_auto_prompt": true,
+    "max_reflection_layers": 3,
+    "auto_prompt_model": "meta-llama/llama-3.1-70b-instruct"
 }
