@@ -93,8 +93,20 @@ Q: {question}
 A: Let's think step by step..."""
 
 # Function to generate initial prompt for Self-Reflection (Original Composite)
-def generate_initial_reflection_prompt(question, answer):
-    return f"""You are an expert in math.
+def generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key):
+    meta_prompt = f"""You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
+
+Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
+
+*   **Type of problem:** The Self-Reflection prompt should guide the model to solve the specific type of problem presented in the question.
+*   **Common mistakes:** The Self-Reflection prompt should guide the model to identify the common mistakes that are made when solving this type of problem.
+*   **Complexity of the problem:** The Self-Reflection prompt should guide the model to try to understand the complexity of the problem, if more steps arte needed to solve it.
+
+
+Here is the original Self-Reflection template that you should adapt:
+
+--- Beginning of the template ---
+You are an expert in <PROBLEM_AREA>.
 You have incorrectly answered the following question.
 Your task is to reflect on the problem, your solution, and the correct answer.
 You will then use this information help you answer the same question in the future.
@@ -106,53 +118,43 @@ Finally, create a list of general advice to help you solve similar types of prob
 Be concise in your response; however, capture all of the essential information.
 For guidance, I will provide you with a single generic example problem and reflection (below).
 [Example Input]
-Question: What is the product of the number of letters contained in the name of the city
-where Iowa State University is located multiplied by the number of letters
-contained in the name of the state?
-Answer:
-Iowa State University is located in the city of Ames
-ISU is located in the state of Iowa.
-The answer is 32
+Question: <an example question similar on complexity to the question received>
+Wrong answer: <the wrong reasoning and answer to the example question, with a specific mistake made along the way that resulted in the wrong answer>
 ---
 [Example Output]
 Explanation:
-I miscalculated the product of the number of letters in the city and state names.
-The gap in my knowledge was not in geography but in basic arithmetic.
-I knew the correct city and state but made a calculation error.
+I miscalculated the <explanation of the mistake>
 Error Keywords:
-- Calculation error
-- Arithmetic error
-- Multiplication error
+- <keywords of the mistake>
 Instructions:
-1. Identify the city where the university is located.
-2. Identify the state where the university is located.
-3. Count the number of letters in the name of the city.
-4. Count the number of letters in the name of the state.
-5. Multiply the number of letters in the city by the number of letters in the state.
-6. Work step-by-step through your mathematical calculations.
-7. Double-check your calculations to ensure accuracy.
-8. Choose the answer that matches your calculated result.
+<list of instructions to solve the problem>
 Advice:
-- Always read the question carefully and understand the problem.
-- Always decompose complex problems into multiple simple steps.
-- Always think through each subproblem step-by-step.
-- Never skip any steps; be explicit in each step of your reasoning.
-- Always double-check your calculations and final answer.
-- Remember that the product of two numbers is the result of multiplying them together,
-not adding them.
+<list of general advice to solve similar types of problems>
 Solution:
-Iowa State University is located in the city of Ames
-Iowa State University is located in the state of Iowa.
-The city name "Ames" contains 4 letters.
-The state name "Iowa" contains 4 letters.
-The product of 4*4 is 16.
-The answer is 16
+<the correct reasoning and answer to the example question>
+--- End of the template ---
 
-Now, look at this question:
+Now, adapt the above template for the following question:
+
 Question: {question}
-Your initial answer was: {answer}
-You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
+
+Generate the adapted Self-Reflection prompt (remember, you need to create a similar example question on complexity to the question received (NOT THE SAME ONE), a wrong answer to it and the correct answer):
 """
+
+    adapted_reflection_prompt = query_model(api_key, meta_prompt, auto_prompt_model)
+
+    adapted_reflection_prompt += f"""\n\nNow, look at this question:
+Question: {question}
+Your initial Chain-of-Thought answer was: {previous_incorrect_answers[0] if previous_incorrect_answers else 'None'}"""
+
+    if len(previous_incorrect_answers) > 1:
+        adapted_reflection_prompt += "\n\nYour previous reflection answers were:"
+        for i, answer in enumerate(previous_incorrect_answers[1:], 1):
+            adapted_reflection_prompt += f"\nReflection {i}: {answer}"
+    
+    adapted_reflection_prompt += """\nYou previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections. Your new answer MUST be different from your previous answers cause they were all incorrect."""
+
+    return adapted_reflection_prompt
 
 # Function to generate re-answer prompt based on reflection
 def generate_reanswer_prompt(question, answer, reflection):
@@ -181,96 +183,6 @@ def extract_answer_gsm_format(response):
     except Exception as e:
         print(f"Error in extract_answer_gsm_format: {e}")
         return None
-
-# Function to generate Self-Reflection prompt using auto-prompting
-def generate_auto_reflection_prompt(question, cot_answer, auto_prompt_model, api_key):
-    meta_prompt = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question, the model's generated answer (including the step-by-step reasoning), and a template for a Self-Reflection prompt.
-
-Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem and the generated answer in question. Focus on aspects such as:
-
-*   **Type of error (if evident):** If the CoT answer is wrong, the Self-Reflection prompt should guide the model in identifying the type of error (calculation, logical, interpretation, etc.).
-*   **Specific steps of CoT:** The Self-Reflection prompt can refer to specific steps of the CoT reasoning where the error may have occurred.
-*   **Numbers and Operations:** If relevant, highlight the numbers and operations involved in the question, so that the model pays special attention to them.
-*   **Expected answer format:** Reinforce the expected numerical format, without additional information, such as "The answer is X."
-
-Here is the original Self-Reflection template that you should adapt:
-
----
-[Original Self-Reflection Template (Composite)]
-
-You are an expert in math.
-You have incorrectly answered the following question.
-Your task is to reflect on the problem, your solution, and the correct answer.
-You will then use this information help you answer the same question in the future.
-First, explain why you answered the question incorrectly.
-Second, list the keywords that describe the type of your errors from most general to most specific.
-Third, solve the problem again, step-by-step, based on your knowledge of the correct answer.
-Fourth, create a list of detailed instructions to help you correctly solve this problem in the future.
-Finally, create a list of general advice to help you solve similar types of problems in the future.
-Be concise in your response; however, capture all of the essential information.
-For guidance, I will provide you with a single generic example problem and reflection (below).
-[Example Input]
-Question: What is the product of the number of letters contained in the name of the city
-where Iowa State University is located multiplied by the number of letters
-contained in the name of the state?
-Answer:
-Iowa State University is located in the city of Ames
-ISU is located in the state of Iowa.
-The answer is 32
----
-[Example Output]
-Explanation:
-I miscalculated the product of the number of letters in the city and state names.
-The gap in my knowledge was not in geography but in basic arithmetic.
-I knew the correct city and state but made a calculation error.
-Error Keywords:
-- Calculation error
-- Arithmetic error
-- Multiplication error
-Instructions:
-1. Identify the city where the university is located.
-2. Identify the state where the university is located.
-3. Count the number of letters in the name of the city.
-4. Count the number of letters in the name of the state.
-5. Multiply the number of letters in the city by the number of letters in the state.
-6. Work step-by-step through your mathematical calculations.
-7. Double-check your calculations to ensure accuracy.
-8. Choose the answer that matches your calculated result.
-Advice:
-- Always read the question carefully and understand the problem.
-- Always decompose complex problems into multiple simple steps.
-- Always think through each subproblem step-by-step.
-- Never skip any steps; be explicit in each step of your reasoning.
-- Always double-check your calculations and final answer.
-- Remember that the product of two numbers is the result of multiplying them together,
-not adding them.
-Solution:
-Iowa State University is located in the city of Ames
-Iowa State University is located in the state of Iowa.
-The city name "Ames" contains 4 letters.
-The state name "Iowa" contains 4 letters.
-The product of 4*4 is 16.
-The answer is 16
-
----
-
-Now, adapt the above template for the following question and CoT answer:
-
-Question: [Original question]
-CoT Answer: [Model-generated CoT answer]
-
-Generate the adapted Self-Reflection prompt:
-"""
-
-    prompt_for_auto_prompting = f"{meta_prompt}\n\nQuestion: {question}\nCoT Answer: {cot_answer}\n\nGenerate the adapted Self-Reflection prompt:"
-
-    adapted_reflection_prompt = query_model(api_key, prompt_for_auto_prompting, auto_prompt_model)
-
-    if adapted_reflection_prompt is None:
-        print("Error generating auto-reflection prompt. Using default prompt.")
-        adapted_reflection_prompt = generate_initial_reflection_prompt(question, cot_answer)
-
-    return adapted_reflection_prompt
 
 # Function to interact with models using OpenRouter API
 def query_model(api_key, prompt, model):
@@ -336,83 +248,73 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
 
         # Self-Reflection
         reflection_data = []
-        if config["use_auto_prompt"]:
-            max_layers = config["max_reflection_layers"]
-            current_answer = cot_response
-            current_score = cot_score
-            auto_prompt_model = config["auto_prompt_model"]
+        previous_incorrect_answers = []
 
-            for layer in range(max_layers):
-                if current_score == 1:
-                    reflection_data.append({
+        max_layers = config["max_reflection_layers"]
+        current_answer = cot_response
+        current_score = cot_score
+        auto_prompt_model = config["auto_prompt_model"]
+
+        for layer in range(max_layers):
+            if current_score == 1:
+                reflection_data.append({
                         "layer": layer,
                         "score": current_score,
                         "response": current_answer,
                         "reflection_prompt": None,
                         "full_response": None,
                         "auto_prompt_used": None
-                    })
-                    break  # Correct answer, no need for further reflection
+                })
+                break  # Correct answer, no need for further reflection
                 
-                auto_prompt_used = generate_auto_reflection_prompt(question, current_answer, auto_prompt_model, api_key) if layer > 0 else generate_initial_reflection_prompt(question, current_answer)
-                reflection_prompt = auto_prompt_used
-                reflection_full_response = query_model(api_key, reflection_prompt, model)
+            previous_incorrect_answers.append(current_answer)
+            auto_prompt_used = generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
 
-                if reflection_full_response is None:
-                    print(f"Timeout or error in reflection (layer {layer+1})")
-                    reflection_data.append({
+            reflection_prompt = auto_prompt_used
+            print(f"Auto-Reflection Prompt (Layer {layer + 1}): {reflection_prompt}")
+            reflection_full_response = query_model(api_key, reflection_prompt, model)
+
+            if reflection_full_response is None:
+                print(f"Timeout or error in reflection (layer {layer+1})")
+                reflection_data.append({
                         "layer": layer,
                         "score": 0,
                         "response": None,
                         "reflection_prompt": reflection_prompt,
                         "full_response": None,
                         "auto_prompt_used": auto_prompt_used
-                    })
-                    break
+                })
+                break
 
-                reanswer_prompt = generate_reanswer_prompt(question, current_answer, reflection_full_response)
-                reanswer_full_response = query_model(api_key, reanswer_prompt, model)
+            reanswer_prompt = generate_reanswer_prompt(question, current_answer, reflection_full_response)
+            reanswer_full_response = query_model(api_key, reanswer_prompt, model)
 
-                if reanswer_full_response is None:
-                    print(f"Timeout or error in reanswer (layer {layer+1})")
-                    reflection_data.append({
+            if reanswer_full_response is None:
+                print(f"Timeout or error in reanswer (layer {layer+1})")
+                reflection_data.append({
                         "layer": layer,
                         "score": 0,
                         "response": None,
                         "reflection_prompt": reflection_prompt,
                         "full_response": reflection_full_response,
                         "auto_prompt_used": auto_prompt_used
-                    })
-                    break
+                })
+                break
 
-                current_answer = extract_answer_gsm_format(reanswer_full_response)
-                current_score = evaluate_response(current_answer, expected_answer)
+            current_answer = extract_answer_gsm_format(reanswer_full_response)
+            current_score = evaluate_response(current_answer, expected_answer)
                 
-                reflection_data.append({
+            reflection_data.append({
                     "layer": layer,
                     "score": current_score,
                     "response": current_answer,
                     "reflection_prompt": reflection_prompt,
                     "full_response": reflection_full_response,
                     "auto_prompt_used": auto_prompt_used
-                })
-
-                print(f"Reflection (layer {layer+1}) response: {current_answer} - Score: {current_score}")
-        else:
-            reflection_prompt = generate_initial_reflection_prompt(question, cot_response)
-            reflection_full_response = query_model(api_key, reflection_prompt, model)
-            reflection_response = extract_answer_gsm_format(reflection_full_response) if reflection_full_response else None
-            reflection_score = evaluate_response(reflection_response, expected_answer)
-            reflection_data.append({
-                "layer": 0,
-                "score": reflection_score,
-                "response": reflection_response,
-                "reflection_prompt": reflection_prompt,
-                "full_response": reflection_full_response,
-                "auto_prompt_used": None
             })
 
-            print(f"Reflection response: {reflection_response} - Score: {reflection_score}")
+            print(f"Reflection (layer {layer+1}) response: {current_answer} - Score: {current_score}")
+
             
         results.append({
             "dataset": dataset_name,
@@ -483,10 +385,8 @@ def main():
                 print(f"Dataset: {dataset_name}")
                 print(f"GSM type: {gsm_type}")
                 print(f"Model: {model}")
-                print(f"Using Auto-Prompt: {config['use_auto_prompt']}")
-                if config["use_auto_prompt"]:
-                    print(f"Max Reflection Layers: {config['max_reflection_layers']}")
-                    print(f"Auto Prompt Model: {config['auto_prompt_model']}")
+                print(f"Max Reflection Layers: {config['max_reflection_layers']}")
+                print(f"Auto Prompt Model: {config['auto_prompt_model']}")
 
                 safe_model_name = model.replace("/", "_")
                 results_df = run_gsm8(sample, API_KEY, config, model, dataset_name, gsm_type)

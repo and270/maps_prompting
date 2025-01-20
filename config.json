@@ -1,8 +1,7 @@
 {
     "datasets": ["p2"],
     "gsm_types": ["gsm-symbolic"],
-    "models": ["meta-llama/llama-3.3-70b-instruct"],
-    "use_auto_prompt": true,
+    "models": ["meta-llama/llama-3.1-70b-instruct"],
     "max_reflection_layers": 3,
     "auto_prompt_model": "meta-llama/llama-3.1-70b-instruct"
 }
