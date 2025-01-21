@@ -255,65 +255,44 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
         current_score = cot_score
         auto_prompt_model = config["auto_prompt_model"]
 
-        for layer in range(max_layers):
-            if current_score == 1:
+        if current_score == 1:
+            reflection_data.append({
+                "layer": 0,
+                "score": current_score,
+                "response": current_answer,
+                "reflection_prompt": None,
+                "full_response": None,
+                "auto_prompt_used": None
+            })
+
+        else:
+            for layer in range(max_layers):# Correct answer, no need for further reflection
+                    
+                previous_incorrect_answers.append(current_answer)
+                auto_prompt_used = generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
+
+                reflection_prompt = auto_prompt_used
+                reflection_full_response = query_model(api_key, reflection_prompt, model)
+
+                reanswer_prompt = generate_reanswer_prompt(question, current_answer, reflection_full_response)
+                reanswer_full_response = query_model(api_key, reanswer_prompt, model)
+
+                current_answer = extract_answer_gsm_format(reanswer_full_response)
+                current_score = evaluate_response(current_answer, expected_answer)
+                    
                 reflection_data.append({
                         "layer": layer,
                         "score": current_score,
                         "response": current_answer,
-                        "reflection_prompt": None,
-                        "full_response": None,
-                        "auto_prompt_used": None
-                })
-                break  # Correct answer, no need for further reflection
-                
-            previous_incorrect_answers.append(current_answer)
-            auto_prompt_used = generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
-
-            reflection_prompt = auto_prompt_used
-            print(f"Auto-Reflection Prompt (Layer {layer + 1}): {reflection_prompt}")
-            reflection_full_response = query_model(api_key, reflection_prompt, model)
-
-            if reflection_full_response is None:
-                print(f"Timeout or error in reflection (layer {layer+1})")
-                reflection_data.append({
-                        "layer": layer,
-                        "score": 0,
-                        "response": None,
-                        "reflection_prompt": reflection_prompt,
-                        "full_response": None,
-                        "auto_prompt_used": auto_prompt_used
-                })
-                break
-
-            reanswer_prompt = generate_reanswer_prompt(question, current_answer, reflection_full_response)
-            reanswer_full_response = query_model(api_key, reanswer_prompt, model)
-
-            if reanswer_full_response is None:
-                print(f"Timeout or error in reanswer (layer {layer+1})")
-                reflection_data.append({
-                        "layer": layer,
-                        "score": 0,
-                        "response": None,
                         "reflection_prompt": reflection_prompt,
                         "full_response": reflection_full_response,
                         "auto_prompt_used": auto_prompt_used
                 })
-                break
 
-            current_answer = extract_answer_gsm_format(reanswer_full_response)
-            current_score = evaluate_response(current_answer, expected_answer)
-                
-            reflection_data.append({
-                    "layer": layer,
-                    "score": current_score,
-                    "response": current_answer,
-                    "reflection_prompt": reflection_prompt,
-                    "full_response": reflection_full_response,
-                    "auto_prompt_used": auto_prompt_used
-            })
+                print(f"Reflection (layer {layer+1}) response: {current_answer} - Score: {current_score}")
 
-            print(f"Reflection (layer {layer+1}) response: {current_answer} - Score: {current_score}")
+                if current_score == 1:
+                    break
 
             
         results.append({
