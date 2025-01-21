@@ -6,6 +6,8 @@ import re
 import os
 from dotenv import load_dotenv
 import json
+from queue import Queue
+from concurrent.futures import ThreadPoolExecutor
 
 # Load environment variables from .env file
 load_dotenv()
@@ -343,33 +345,62 @@ def load_config():
         config = json.load(config_file)
     return config
 
+def worker(args):
+    dataset_name, gsm_type, model, sample, API_KEY, config = args
+    try:
+        # Create a local copy of config to modify for this worker
+        local_config = config.copy()
+        
+        # If auto_prompt_model is set to "same", use the current model
+        if local_config['auto_prompt_model'] == "same":
+            local_config['auto_prompt_model'] = model
+
+        print(f"\nExecuting test with:")
+        print(f"Dataset: {dataset_name}")
+        print(f"GSM type: {gsm_type}")
+        print(f"Model: {model}")
+        print(f"Max Reflection Layers: {local_config['max_reflection_layers']}")
+        print(f"Auto Prompt Model: {local_config['auto_prompt_model']}")
+
+        safe_model_name = model.replace("/", "_")
+        results_df = run_gsm8(sample, API_KEY, local_config, model, dataset_name, gsm_type)
+        
+        results_dir = "results"
+        if not os.path.exists(results_dir):
+            os.makedirs(results_dir)
+            
+        save_results(results_df, f"{results_dir}/results_dataset_{dataset_name}_{gsm_type}_{safe_model_name}.csv")
+    except Exception as e:
+        print(f"Error in worker thread: {e}")
+
 def main():
     API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-    results_dir = "results"
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir)
-
     config = load_config()
 
     datasets = config.get('datasets', ['main'])
     gsm_types = config.get('gsm_types', ['gsm8-std'])
     models = config.get('models', ['meta-llama/llama-3.1-8b-instruct'])
+    
+    # Filter out empty model strings
+    models = [model for model in models if model]
 
-    for dataset_name in datasets:
-        sample = prepare_dataset(dataset_name)
-        for gsm_type in gsm_types:
-            for model in models:
-                print(f"\nExecuting test with:")
-                print(f"Dataset: {dataset_name}")
-                print(f"GSM type: {gsm_type}")
-                print(f"Model: {model}")
-                print(f"Max Reflection Layers: {config['max_reflection_layers']}")
-                print(f"Auto Prompt Model: {config['auto_prompt_model']}")
+    # Prepare all dataset samples upfront
+    dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
 
-                safe_model_name = model.replace("/", "_")
-                results_df = run_gsm8(sample, API_KEY, config, model, dataset_name, gsm_type)
-                save_results(results_df, f"{results_dir}/results_dataset_{dataset_name}_{gsm_type}_{safe_model_name}.csv")
+    # Create all possible combinations of parameters
+    tasks = [
+        (dataset_name, gsm_type, model, dataset_samples[dataset_name], API_KEY, config)
+        for dataset_name in datasets
+        for gsm_type in gsm_types
+        for model in models
+    ]
+
+    # Use ThreadPoolExecutor to run tasks in parallel
+    max_workers = min(len(tasks), 10)  # Limit max concurrent threads
+    print(f"Starting {len(tasks)} tasks with {max_workers} workers...")
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        list(executor.map(worker, tasks))
 
 if __name__ == "__main__":
     main()
