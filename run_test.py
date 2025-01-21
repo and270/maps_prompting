@@ -283,7 +283,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
                 current_score = evaluate_response(current_answer, expected_answer)
                     
                 reflection_data.append({
-                        "layer": layer,
+                        "layer": layer+1,
                         "score": current_score,
                         "response": current_answer,
                         "reflection_prompt": reflection_prompt,
@@ -322,8 +322,18 @@ def save_results(results_df, filename="experiment_results.csv"):
     # Expand the list of dictionaries in reflection_data
     expanded_results = []
     for _, row in results_df.iterrows():
-        for layer_data in row['reflection_data']:
+        for i, layer_data in enumerate(row['reflection_data']):
             new_row = row.to_dict()
+            # Only keep base and cot data for the first reflection layer
+            if i > 0:
+                new_row.update({
+                    'base_full_response': '',
+                    'base_response': '',
+                    'base_score': '',
+                    'cot_full_response': '',
+                    'cot_response': '',
+                    'cot_score': ''
+                })
             new_row.update({
                 'reflection_layer': layer_data['layer'],
                 'reflection_score': layer_data['score'],
@@ -373,6 +383,61 @@ def worker(args):
     except Exception as e:
         print(f"Error in worker thread: {e}")
 
+def analyze_results(results_dir="results"):
+    """Analyze all results files and create a summary."""
+    all_files = [f for f in os.listdir(results_dir) if f.endswith('.csv')]
+    summary_data = []
+
+    for file in all_files:
+        df = pd.read_csv(os.path.join(results_dir, file))
+        
+        # Extract metadata from filename
+        parts = file.replace('results_dataset_', '').replace('.csv', '').split('_')
+        dataset = parts[0]
+        gsm_type = parts[1]
+        model = '_'.join(parts[2:])
+
+        # Calculate metrics
+        total_questions = len(df[df['reflection_layer'] == 0])  # Count unique questions
+        
+        # Base method results
+        base_correct = df[df['reflection_layer'] == 0]['base_score'].sum()
+        base_accuracy = base_correct / total_questions if total_questions > 0 else 0
+
+        # CoT method results
+        cot_correct = df[df['reflection_layer'] == 0]['cot_score'].sum()
+        cot_accuracy = cot_correct / total_questions if total_questions > 0 else 0
+
+        # Self-reflection results by layer
+        max_layer = df['reflection_layer'].max()
+        reflection_accuracies = []
+        
+        for layer in range(max_layer + 1):
+            layer_correct = df[df['reflection_layer'] == layer]['reflection_score'].sum()
+            layer_accuracy = layer_correct / total_questions if total_questions > 0 else 0
+            reflection_accuracies.append(layer_accuracy)
+
+        # Create summary row
+        summary_row = {
+            'dataset': dataset,
+            'gsm_type': gsm_type,
+            'model': model,
+            'total_questions': total_questions,
+            'base_accuracy': base_accuracy,
+            'cot_accuracy': cot_accuracy,
+        }
+        
+        # Add reflection layers accuracies
+        for layer, accuracy in enumerate(reflection_accuracies):
+            summary_row[f'reflection_layer_{layer}_accuracy'] = accuracy
+
+        summary_data.append(summary_row)
+
+    # Create and save summary DataFrame
+    summary_df = pd.DataFrame(summary_data)
+    summary_df.to_csv(os.path.join(results_dir, 'summary_results.csv'), index=False)
+    print(f"Summary results saved to {os.path.join(results_dir, 'summary_results.csv')}")
+
 def main():
     API_KEY = os.getenv("OPENROUTER_API_KEY")
     config = load_config()
@@ -401,6 +466,9 @@ def main():
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         list(executor.map(worker, tasks))
+
+    # After all tasks are completed, analyze results
+    analyze_results()
 
 if __name__ == "__main__":
     main()
