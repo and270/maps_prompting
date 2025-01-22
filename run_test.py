@@ -384,91 +384,174 @@ def worker(args):
         print(f"Error in worker thread: {e}")
 
 def analyze_results(results_dir="results"):
-    """Analyze all results files and create a summary."""
-    all_files = [f for f in os.listdir(results_dir) if f.endswith('.csv')]
-    summary_data = []
+    """
+    Analyze all expanded results CSV files (produced by `save_results`) in `results_dir`
+    and create a single Excel file summarizing the accuracy at each method/level.
+    """
+    all_files = [f for f in os.listdir(results_dir) if f.endswith(".csv")]
+    if not all_files:
+        print("No CSV results files found in the directory.")
+        return
 
+    # Read and merge all CSVs
+    df_list = []
     for file in all_files:
-        df = pd.read_csv(os.path.join(results_dir, file))
-        
-        # Extract metadata from filename
-        parts = file.replace('results_dataset_', '').replace('.csv', '').split('_')
-        dataset = parts[0]
-        gsm_type = parts[1]
-        model = '_'.join(parts[2:])
+        file_path = os.path.join(results_dir, file)
+        temp_df = pd.read_csv(file_path)
+        df_list.append(temp_df)
 
-        # Calculate metrics
-        total_questions = len(df[df['reflection_layer'] == 0])  # Count unique questions
-        
-        # Base method results
-        base_correct = df[df['reflection_layer'] == 0]['base_score'].sum()
-        base_accuracy = base_correct / total_questions if total_questions > 0 else 0
+    if not df_list:
+        print("No data found in the results directory.")
+        return
 
-        # CoT method results
-        cot_correct = df[df['reflection_layer'] == 0]['cot_score'].sum()
-        cot_accuracy = cot_correct / total_questions if total_questions > 0 else 0
+    df = pd.concat(df_list, ignore_index=True)
 
-        # Self-reflection results by layer
-        max_layer = df['reflection_layer'].max()
-        reflection_accuracies = []
-        
-        for layer in range(max_layer + 1):
-            layer_correct = df[df['reflection_layer'] == layer]['reflection_score'].sum()
-            layer_accuracy = layer_correct / total_questions if total_questions > 0 else 0
-            reflection_accuracies.append(layer_accuracy)
+    # We will group by (dataset, gsm_type, model, question)
+    # and flatten the "base_score", "cot_score", and reflection-layer scores into a single row per question.
+    #
+    # Note: The code from `save_results` can produce multiple rows for each question
+    # (one row per reflection-layer attempt). We want to pivot them so that each
+    # question is represented by exactly one row with columns for reflection_layer_0..3, etc.
 
-        # Create summary row
-        summary_row = {
-            'dataset': dataset,
-            'gsm_type': gsm_type,
-            'model': model,
-            'total_questions': total_questions,
-            'base_accuracy': base_accuracy,
-            'cot_accuracy': cot_accuracy,
-        }
-        
-        # Add reflection layers accuracies
-        for layer, accuracy in enumerate(reflection_accuracies):
-            summary_row[f'reflection_layer_{layer}_accuracy'] = accuracy
+    def combine_question_data(group):
+        """
+        Convert multiple reflection-layer rows into one row for a single question.
+        We'll:
+          - read the single base_score/cot_score from the group
+          - read reflection_layer_0..3 from the group if present
+        """
+        # Base method (if present)
+        base_score_series = group["base_score"].dropna()
+        base_score = base_score_series.iloc[0] if not base_score_series.empty else 0
 
-        summary_data.append(summary_row)
+        # CoT method (if present)
+        cot_score_series = group["cot_score"].dropna()
+        cot_score = cot_score_series.iloc[0] if not cot_score_series.empty else 0
 
-    # Create and save summary DataFrame
-    summary_df = pd.DataFrame(summary_data)
-    summary_df.to_csv(os.path.join(results_dir, 'summary_results.csv'), index=False)
-    print(f"Summary results saved to {os.path.join(results_dir, 'summary_results.csv')}")
+        # Reflection layer scores
+        # By code design, reflection_layer=0 only appears if the CoT approach was correct
+        # (thus no further reflection needed). Then reflection_layer=1, 2, 3, etc. appear as needed.
+        reflection_scores = {}
+        for layer in range(4):  # Up to reflection_layer_3 as requested
+            match = group[group["reflection_layer"] == layer]
+            if not match.empty:
+                # We assume only one row per (question, reflection_layer)
+                reflection_scores[layer] = float(match["reflection_score"].iloc[0])
+            else:
+                reflection_scores[layer] = 0
+
+        return pd.Series({
+            "base_score": base_score,
+            "cot_score": cot_score,
+            "reflection_layer_0_score": reflection_scores[0],
+            "reflection_layer_1_score": reflection_scores[1],
+            "reflection_layer_2_score": reflection_scores[2],
+            "reflection_layer_3_score": reflection_scores[3],
+        })
+
+    # Apply the aggregator to get a single row per question
+    pivot_df = (
+        df
+        .groupby(["dataset", "gsm_type", "model", "question"], as_index=False)
+        .apply(combine_question_data)
+    )
+
+    # Now, for each (dataset, gsm_type, model), we want:
+    # - total_questions
+    # - accuracy for base, CoT, and reflection_layer_0..3
+    summary_df = (
+        pivot_df
+        .groupby(["dataset", "gsm_type", "model"], as_index=False)
+        .agg({
+            "base_score": "sum",
+            "cot_score": "sum",
+            "reflection_layer_0_score": "sum",
+            "reflection_layer_1_score": "sum",
+            "reflection_layer_2_score": "sum",
+            "reflection_layer_3_score": "sum",
+            "question": "count"  # total unique questions
+        })
+    )
+
+    # Rename question->total_questions for clarity
+    summary_df.rename(columns={"question": "total_questions"}, inplace=True)
+
+    # Compute the actual accuracy = (number of correct answers) / (total_questions)
+    summary_df["base_accuracy"] = summary_df["base_score"] / summary_df["total_questions"]
+    summary_df["cot_accuracy"] = summary_df["cot_score"] / summary_df["total_questions"]
+    summary_df["reflection_layer_0_accuracy"] = summary_df["reflection_layer_0_score"] / summary_df["total_questions"]
+    summary_df["reflection_layer_1_accuracy"] = summary_df["reflection_layer_1_score"] / summary_df["total_questions"]
+    summary_df["reflection_layer_2_accuracy"] = summary_df["reflection_layer_2_score"] / summary_df["total_questions"]
+    summary_df["reflection_layer_3_accuracy"] = summary_df["reflection_layer_3_score"] / summary_df["total_questions"]
+
+    # We don't need the raw sums in the final table
+    summary_df.drop(
+        columns=[
+            "base_score", "cot_score", 
+            "reflection_layer_0_score", "reflection_layer_1_score",
+            "reflection_layer_2_score", "reflection_layer_3_score"
+        ],
+        inplace=True
+    )
+
+    # Reorder columns as requested
+    summary_df = summary_df[
+        [
+            "dataset",
+            "gsm_type",
+            "model",
+            "total_questions",
+            "base_accuracy",
+            "cot_accuracy",
+            "reflection_layer_0_accuracy",
+            "reflection_layer_1_accuracy",
+            "reflection_layer_2_accuracy",
+            "reflection_layer_3_accuracy",
+        ]
+    ]
+
+    # Finally, save to an Excel file
+    output_path = os.path.join(results_dir, "summary_results.xlsx")
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
+        summary_df.to_excel(writer, index=False, sheet_name="Summary")
+
+    print(f"Summary results saved to {output_path}")
 
 def main():
     API_KEY = os.getenv("OPENROUTER_API_KEY")
     config = load_config()
 
-    datasets = config.get('datasets', ['main'])
-    gsm_types = config.get('gsm_types', ['gsm8-std'])
-    models = config.get('models', ['meta-llama/llama-3.1-8b-instruct'])
-    
-    # Filter out empty model strings
-    models = [model for model in models if model]
+    run_test =  config.get('run_test', False)
+    run_analysis = config.get('run_analysis', False)
 
-    # Prepare all dataset samples upfront
-    dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
+    if run_test:
+        datasets = config.get('datasets', ['main'])
+        gsm_types = config.get('gsm_types', ['gsm8-std'])
+        models = config.get('models', ['meta-llama/llama-3.1-8b-instruct'])
+        
+        # Filter out empty model strings
+        models = [model for model in models if model]
 
-    # Create all possible combinations of parameters
-    tasks = [
-        (dataset_name, gsm_type, model, dataset_samples[dataset_name], API_KEY, config)
-        for dataset_name in datasets
-        for gsm_type in gsm_types
-        for model in models
-    ]
+        # Prepare all dataset samples upfront
+        dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
 
-    # Use ThreadPoolExecutor to run tasks in parallel
-    max_workers = min(len(tasks), 10)  # Limit max concurrent threads
-    print(f"Starting {len(tasks)} tasks with {max_workers} workers...")
-    
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        list(executor.map(worker, tasks))
+        # Create all possible combinations of parameters
+        tasks = [
+            (dataset_name, gsm_type, model, dataset_samples[dataset_name], API_KEY, config)
+            for dataset_name in datasets
+            for gsm_type in gsm_types
+            for model in models
+        ]
 
-    # After all tasks are completed, analyze results
-    analyze_results()
+        # Use ThreadPoolExecutor to run tasks in parallel
+        max_workers = min(len(tasks), 10)  # Limit max concurrent threads
+        print(f"Starting {len(tasks)} tasks with {max_workers} workers...")
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            list(executor.map(worker, tasks))
+
+    if run_analysis:
+        analyze_results()
 
 if __name__ == "__main__":
     main()
