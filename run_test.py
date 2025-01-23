@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import json
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -187,31 +188,36 @@ def extract_answer_gsm_format(response):
         return None
 
 # Function to interact with models using OpenRouter API
-def query_model(api_key, prompt, model):
-    try:
-        client = openai.OpenAI(
-            api_key=api_key,
-            base_url="https://openrouter.ai/api/v1",
-            timeout=180.0
-        )
+def query_model(api_key, prompt, model, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            client = openai.OpenAI(
+                api_key=api_key,
+                base_url="https://openrouter.ai/api/v1",
+                timeout=180.0
+            )
 
-        chat_completion = client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that can solve math problems step by step.",
-                },
-                {"role": "user", "content": prompt},
-            ],
-            temperature=0,
-            top_p=1,
-        )
-        response = chat_completion.choices[0].message.content.strip()
-        return response if response else None
-    except Exception as e:
-        print(f"Error querying model {model}: {e}")
-        return None
+            chat_completion = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a helpful assistant that can solve math problems step by step.",
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=0,
+                top_p=1,
+            )
+            response = chat_completion.choices[0].message.content.strip()
+            return response if response else None
+        except Exception as e:
+            if attempt < max_retries - 1:  # Don't sleep on the last attempt
+                print(f"Attempt {attempt + 1} failed. Retrying in 5 seconds...")
+                time.sleep(5)  # Wait 5 seconds before retrying
+            else:
+                print(f"Error querying model {model} after {max_retries} attempts: {e}")
+                return None
 
 # Function to evaluate responses
 def evaluate_response(response, expected_answer):
