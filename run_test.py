@@ -10,7 +10,6 @@ from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-# Load environment variables from .env file
 load_dotenv()
 
 EIGHT_SHOT_EXAMPLES = """
@@ -73,13 +72,10 @@ So, each row contains 36 / 9 = 4 flowers.
 The answer is 4.
 """
 
-# Function to load and prepare the dataset
 def prepare_dataset(dataset_type='main'):
     print(f"Loading the {dataset_type} dataset...")
-    # Load only the selected dataset variant
-    ds = load_dataset("apple/GSM-Symbolic", dataset_type)
 
-    # Convert to DataFrame using the 'test' split
+    ds = load_dataset("apple/GSM-Symbolic", dataset_type)
     df = pd.DataFrame(ds['test'])
 
     # Select a random sample by "original_id"
@@ -88,14 +84,14 @@ def prepare_dataset(dataset_type='main'):
     print(f"Dataset {dataset_type} loaded. Size: {len(sample)}.")
     return sample
 
-# Function to generate prompt using Chain of Thought (CoT)
+
 def generate_cot_prompt(question):
     return f"""{EIGHT_SHOT_EXAMPLES}
 Now, look at this question:
 Q: {question}
 A: Let's think step by step..."""
 
-# Function to generate initial prompt for Self-Reflection (Original Composite)
+
 def generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key):
     meta_prompt = f"""You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 
@@ -159,7 +155,7 @@ Your initial Chain-of-Thought answer was: {previous_incorrect_answers[0] if prev
 
     return adapted_reflection_prompt
 
-# Function to generate re-answer prompt based on reflection
+
 def generate_reanswer_prompt(question, answer, reflection):
     return f"""{EIGHT_SHOT_EXAMPLES}
 
@@ -186,6 +182,7 @@ def extract_answer_gsm_format(response):
     except Exception as e:
         print(f"Error in extract_answer_gsm_format: {e}")
         return None
+
 
 # Function to interact with models using OpenRouter API
 def query_model(api_key, prompt, model, max_retries=3):
@@ -214,12 +211,12 @@ def query_model(api_key, prompt, model, max_retries=3):
         except Exception as e:
             if attempt < max_retries - 1:  # Don't sleep on the last attempt
                 print(f"Attempt {attempt + 1} failed. Retrying in 5 seconds...")
-                time.sleep(5)  # Wait 5 seconds before retrying
+                time.sleep(5)
             else:
                 print(f"Error querying model {model} after {max_retries} attempts: {e}")
                 return None
 
-# Function to evaluate responses
+
 def evaluate_response(response, expected_answer):
     try:
         if response is None:
@@ -228,6 +225,7 @@ def evaluate_response(response, expected_answer):
     except Exception as e:
         print(f"Error in evaluate_response: {e}")
         return 0
+
 
 # Main function to run experiments
 def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
@@ -254,7 +252,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
 
         print(f"COT response: {cot_response} - Score: {cot_score}")
 
-        # Self-Reflection
+        # Multi-layer Self-Reflection
         reflection_data = []
         previous_incorrect_answers = []
 
@@ -274,7 +272,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
             })
 
         else:
-            for layer in range(max_layers):# Correct answer, no need for further reflection
+            for layer in range(max_layers):
                     
                 previous_incorrect_answers.append(current_answer)
                 auto_prompt_used = generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
@@ -319,7 +317,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
         })
     return pd.DataFrame(results)
 
-# Function to save results
+
 def save_results(results_df, filename="experiment_results.csv"):
     directory = os.path.dirname(filename)
     if directory and not os.path.exists(directory):
@@ -330,7 +328,6 @@ def save_results(results_df, filename="experiment_results.csv"):
     for _, row in results_df.iterrows():
         for i, layer_data in enumerate(row['reflection_data']):
             new_row = row.to_dict()
-            # Only keep base and cot data for the first reflection layer
             if i > 0:
                 new_row.update({
                     'base_full_response': '',
@@ -348,7 +345,7 @@ def save_results(results_df, filename="experiment_results.csv"):
                 'reflection_full_response': layer_data['full_response'],
                 'auto_prompt_used': layer_data['auto_prompt_used']
             })
-            del new_row['reflection_data']  # Remove the original column
+            del new_row['reflection_data'] 
             expanded_results.append(new_row)
 
     expanded_df = pd.DataFrame(expanded_results)
@@ -364,10 +361,9 @@ def load_config():
 def worker(args):
     dataset_name, gsm_type, model, sample, API_KEY, config = args
     try:
-        # Create a local copy of config to modify for this worker
         local_config = config.copy()
         
-        # If auto_prompt_model is set to "same", use the current model
+        # If auto_prompt_model is set to "same", use the current model also for the auto prompt
         if local_config['auto_prompt_model'] == "same":
             local_config['auto_prompt_model'] = model
 
@@ -399,7 +395,6 @@ def analyze_results(results_dir="results"):
         print("No CSV results files found in the directory.")
         return
 
-    # Read and merge all CSVs
     df_list = []
     for file in all_files:
         file_path = os.path.join(results_dir, file)
@@ -417,7 +412,7 @@ def analyze_results(results_dir="results"):
     #
     # Note: The code from `save_results` can produce multiple rows for each question
     # (one row per reflection-layer attempt). We want to pivot them so that each
-    # question is represented by exactly one row with columns for reflection_layer_0..3, etc.
+    # question is represented by exactly one row with columns for reflection_layer_1..3, etc.
 
     def combine_question_data(group):
         """
@@ -426,22 +421,19 @@ def analyze_results(results_dir="results"):
           - read the single base_score/cot_score from the group
           - read reflection_layer_0..3 from the group if present
         """
-        # Base method (if present)
+        # Base
         base_score_series = group["base_score"].dropna()
         base_score = base_score_series.iloc[0] if not base_score_series.empty else 0
 
-        # CoT method (if present)
+        # CoT
         cot_score_series = group["cot_score"].dropna()
         cot_score = cot_score_series.iloc[0] if not cot_score_series.empty else 0
 
         # Reflection layer scores
-        # By code design, reflection_layer=0 only appears if the CoT approach was correct
-        # (thus no further reflection needed). Then reflection_layer=1, 2, 3, etc. appear as needed.
         reflection_scores = {}
         for layer in range(4):  # Up to reflection_layer_3 as requested
             match = group[group["reflection_layer"] == layer]
             if not match.empty:
-                # We assume only one row per (question, reflection_layer)
                 reflection_scores[layer] = float(match["reflection_score"].iloc[0])
             else:
                 reflection_scores[layer] = 0
@@ -449,10 +441,9 @@ def analyze_results(results_dir="results"):
         return pd.Series({
             "base_score": base_score,
             "cot_score": cot_score,
-            "reflection_layer_0_score": reflection_scores[0],
-            "reflection_layer_1_score": reflection_scores[1],
-            "reflection_layer_2_score": reflection_scores[2],
-            "reflection_layer_3_score": reflection_scores[3],
+            "reflection_layer_1_score": reflection_scores[1], #Score added considering layer 1
+            "reflection_layer_2_score": reflection_scores[2], #Score added considering layer 2
+            "reflection_layer_3_score": reflection_scores[3], #Score added considering layer 3
         })
 
     # Apply the aggregator to get a single row per question
@@ -464,14 +455,13 @@ def analyze_results(results_dir="results"):
 
     # Now, for each (dataset, gsm_type, model), we want:
     # - total_questions
-    # - accuracy for base, CoT, and reflection_layer_0..3
+    # - accuracy for base, CoT, and reflection_layer_1..3
     summary_df = (
         pivot_df
         .groupby(["dataset", "gsm_type", "model"], as_index=False)
         .agg({
             "base_score": "sum",
             "cot_score": "sum",
-            "reflection_layer_0_score": "sum",
             "reflection_layer_1_score": "sum",
             "reflection_layer_2_score": "sum",
             "reflection_layer_3_score": "sum",
@@ -485,7 +475,6 @@ def analyze_results(results_dir="results"):
     # Compute the actual accuracy = (number of correct answers) / (total_questions)
     summary_df["base_accuracy"] = summary_df["base_score"] / summary_df["total_questions"]
     summary_df["cot_accuracy"] = summary_df["cot_score"] / summary_df["total_questions"]
-    summary_df["reflection_layer_0_accuracy"] = summary_df["reflection_layer_0_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_1_accuracy"] = summary_df["reflection_layer_1_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_2_accuracy"] = summary_df["reflection_layer_2_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_3_accuracy"] = summary_df["reflection_layer_3_score"] / summary_df["total_questions"]
@@ -493,8 +482,7 @@ def analyze_results(results_dir="results"):
     # We don't need the raw sums in the final table
     summary_df.drop(
         columns=[
-            "base_score", "cot_score", 
-            "reflection_layer_0_score", "reflection_layer_1_score",
+            "base_score", "cot_score", "reflection_layer_1_score",
             "reflection_layer_2_score", "reflection_layer_3_score"
         ],
         inplace=True
@@ -509,14 +497,20 @@ def analyze_results(results_dir="results"):
             "total_questions",
             "base_accuracy",
             "cot_accuracy",
-            "reflection_layer_0_accuracy",
             "reflection_layer_1_accuracy",
             "reflection_layer_2_accuracy",
             "reflection_layer_3_accuracy",
         ]
     ]
 
-    # Finally, save to an Excel file
+    # Add new aggregate columns
+    summary_df["self_reflection_layer_1_only_accuracy"] = summary_df["cot_accuracy"] + summary_df["reflection_layer_1_accuracy"] #Total score for method Self Reflection, but only considering layer 1
+    summary_df["self_reflection_total_accuracy"] = (summary_df["cot_accuracy"] + 
+                                                  summary_df["reflection_layer_1_accuracy"] + 
+                                                  summary_df["reflection_layer_2_accuracy"] + 
+                                                  summary_df["reflection_layer_3_accuracy"]) #Total score for method Self Reflection, considering all layers
+
+
     output_path = os.path.join(results_dir, "summary_results.xlsx")
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         summary_df.to_excel(writer, index=False, sheet_name="Summary")
@@ -535,13 +529,10 @@ def main():
         gsm_types = config.get('gsm_types', ['gsm8-std'])
         models = config.get('models', ['meta-llama/llama-3.1-8b-instruct'])
         
-        # Filter out empty model strings
         models = [model for model in models if model]
 
-        # Prepare all dataset samples upfront
         dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
 
-        # Create all possible combinations of parameters
         tasks = [
             (dataset_name, gsm_type, model, dataset_samples[dataset_name], API_KEY, config)
             for dataset_name in datasets
@@ -550,7 +541,7 @@ def main():
         ]
 
         # Use ThreadPoolExecutor to run tasks in parallel
-        max_workers = min(len(tasks), 10)  # Limit max concurrent threads
+        max_workers = min(len(tasks), 10)
         print(f"Starting {len(tasks)} tasks with {max_workers} workers...")
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
