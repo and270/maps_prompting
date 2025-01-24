@@ -161,18 +161,12 @@ If you find this repository or our paper helpful in your research, please cite i
   title={Enhancing Multi-Step Mathematical Reasoning in Large Language Models 
          with Multi-Layered Self-Reflection and Auto-Prompting},
   author={Silva, André de Souza Loureiro and Valverde Rebaza, Jorge Carlos},
-  journal={arXiv or Journal TBD},
   year={2025},
-  note={Preprint or In Submission}
 }
 ```
 
 ---
 
-## License
 
-This project is released under the [MIT License](LICENSE) (or whichever license you choose). See the [LICENSE](LICENSE) file for details.
-
----
 
 Thank you for your interest in **Multi-Layered Self-Reflection with Auto-Prompting**! If you have any questions, suggestions, or feedback, feel free to open an issue or submit a pull request.
