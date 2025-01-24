@@ -24,11 +24,6 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 2. Reflect on incorrect or incomplete steps by **auto-generating** (meta-prompting) a new reflection prompt tailored to the specific mistakes and problem type.
 3. Iteratively refine its solution over multiple layers until reaching a correct conclusion or hitting a maximum number of attempts.
 
-This repository contains:
-- **Python scripts** demonstrating how to query different LLMs through the [OpenRouter API](https://openrouter.ai/) (or any other API that follows a similar interface).
-- **Configuration files** (`config.json`) that control dataset choice, reflection layers, model specifications, etc.
-- **Utilities** for generating prompts, analyzing outputs, and saving results.
-
 ---
 
 ## Features
