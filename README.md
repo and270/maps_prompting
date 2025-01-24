@@ -100,7 +100,7 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 
 To run the main experiment:
 ```bash
-python main.py
+python run_test.py
 ```
 - The script will load each dataset specified in `config.json`, sample data, and query each model in the `models` list.
 - It will generate CSV logs inside a `results/` directory (one CSV per dataset/model combination).
@@ -115,7 +115,7 @@ If you have `run_analysis` set to `true` in `config.json`, the script will autom
 Alternatively, you can run the analysis step independently after collecting data:
 ```bash
 # Make sure "run_test" is false and "run_analysis" is true
-python main.py
+python run_test.py
 ```
 This will parse the existing CSVs in `results/` and produce the summary Excel.
 
