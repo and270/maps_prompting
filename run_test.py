@@ -91,8 +91,67 @@ Now, look at this question:
 Q: {question}
 A: Let's think step by step..."""
 
+def generate_auto_reflection_traditional_prompt(question, answer):
+    return f"""You are an expert in math.
+You have incorrectly answered the following question.
+Your task is to reflect on the problem, your solution, and the correct answer.
+You will then use this information help you answer the same question in the future.
+First, explain why you answered the question incorrectly.
+Second, list the keywords that describe the type of your errors from most general to most specific.
+Third, solve the problem again, step-by-step, based on your knowledge of the correct answer.
+Fourth, create a list of detailed instructions to help you correctly solve this problem in the future.
+Finally, create a list of general advice to help you solve similar types of problems in the future.
+Be concise in your response; however, capture all of the essential information.
+For guidance, I will provide you with a single generic example problem and reflection (below).
+[Example Input]
+Question: What is the product of the number of letters contained in the name of the city
+where Iowa State University is located multiplied by the number of letters
+contained in the name of the state?
+Answer:
+Iowa State University is located in the city of Ames
+ISU is located in the state of Iowa.
+The answer is 32
+---
+[Example Output]
+Explanation:
+I miscalculated the product of the number of letters in the city and state names.
+The gap in my knowledge was not in geography but in basic arithmetic.
+I knew the correct city and state but made a calculation error.
+Error Keywords:
+- Calculation error
+- Arithmetic error
+- Multiplication error
+Instructions:
+1. Identify the city where the university is located.
+2. Identify the state where the university is located.
+3. Count the number of letters in the name of the city.
+4. Count the number of letters in the name of the state.
+5. Multiply the number of letters in the city by the number of letters in the state.
+6. Work step-by-step through your mathematical calculations.
+7. Double-check your calculations to ensure accuracy.
+8. Choose the answer that matches your calculated result.
+Advice:
+- Always read the question carefully and understand the problem.
+- Always decompose complex problems into multiple simple steps.
+- Always think through each subproblem step-by-step.
+- Never skip any steps; be explicit in each step of your reasoning.
+- Always double-check your calculations and final answer.
+- Remember that the product of two numbers is the result of multiplying them together,
+not adding them.
+Solution:
+Iowa State University is located in the city of Ames
+Iowa State University is located in the state of Iowa.
+The city name "Ames" contains 4 letters.
+The state name "Iowa" contains 4 letters.
+The product of 4*4 is 16.
+The answer is 16
+Now, look at this question:
+Question: {question}
+Your initial answer was: {answer}
+You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
+"""
 
-def generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key):
+def generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key):
     meta_prompt = f"""You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
@@ -252,8 +311,39 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
 
         print(f"COT response: {cot_response} - Score: {cot_score}")
 
+        if config["run_traditional_self_reflection"]:
+            reflection_data_traditional_method = []
+            
+            if cot_score == 0:
+                traditional_reflection_prompt = generate_auto_reflection_traditional_prompt(question, cot_full_response)
+                traditional_reflection_response = query_model(api_key, traditional_reflection_prompt, model)
+                
+                traditional_reanswer_prompt = generate_reanswer_prompt(question, cot_response, traditional_reflection_response)
+                traditional_reanswer_response = query_model(api_key, traditional_reanswer_prompt, model)
+                
+                traditional_answer = extract_answer_gsm_format(traditional_reanswer_response)
+                traditional_score = evaluate_response(traditional_answer, expected_answer)
+
+                reflection_data_traditional_method.append({
+                    "layer": None,
+                    "score": traditional_score,
+                    "response": traditional_answer,
+                    "reflection_prompt": traditional_reflection_prompt,
+                    "full_response": traditional_reflection_response,
+                    "auto_prompt_used": "traditional"
+                })
+            else:
+                reflection_data_traditional_method.append({
+                    "layer": None,
+                    "score": cot_score,
+                    "response": None,
+                    "reflection_prompt": None,
+                    "full_response": None,
+                    "auto_prompt_used": None
+                })
+
         # Multi-layer Self-Reflection
-        reflection_data = []
+        reflection_data_multi_layer__method = []
         previous_incorrect_answers = []
 
         max_layers = config["max_reflection_layers"]
@@ -262,7 +352,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
         auto_prompt_model = config["auto_prompt_model"]
 
         if current_score == 1:
-            reflection_data.append({
+            reflection_data_multi_layer__method.append({
                 "layer": 0,
                 "score": current_score,
                 "response": current_answer,
@@ -275,7 +365,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
             for layer in range(max_layers):
                     
                 previous_incorrect_answers.append(current_answer)
-                auto_prompt_used = generate_auto_reflection_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
+                auto_prompt_used = generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
 
                 reflection_prompt = auto_prompt_used
                 reflection_full_response = query_model(api_key, reflection_prompt, model)
@@ -286,7 +376,7 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
                 current_answer = extract_answer_gsm_format(reanswer_full_response)
                 current_score = evaluate_response(current_answer, expected_answer)
                     
-                reflection_data.append({
+                reflection_data_multi_layer__method.append({
                         "layer": layer+1,
                         "score": current_score,
                         "response": current_answer,
@@ -313,7 +403,8 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type):
             "cot_full_response": cot_full_response,
             "cot_response": cot_response,
             "cot_score": cot_score,
-            "reflection_data": reflection_data
+            'traditional_reflection_data': reflection_data_traditional_method,
+            "reflection_data": reflection_data_multi_layer__method
         })
     return pd.DataFrame(results)
 
@@ -323,20 +414,35 @@ def save_results(results_df, filename="experiment_results.csv"):
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Expand the list of dictionaries in reflection_data
     expanded_results = []
     for _, row in results_df.iterrows():
-        for i, layer_data in enumerate(row['reflection_data']):
-            new_row = row.to_dict()
-            if i > 0:
-                new_row.update({
-                    'base_full_response': '',
-                    'base_response': '',
-                    'base_score': '',
-                    'cot_full_response': '',
-                    'cot_response': '',
-                    'cot_score': ''
-                })
+        base_row = {
+            'dataset': row['dataset'],
+            'gsm_type': row['gsm_type'],
+            'model': row['model'],
+            'question': row['question'],
+            'expected_answer': row['expected_answer'],
+            'base_full_response': row['base_full_response'],
+            'base_response': row['base_response'],
+            'base_score': row['base_score'],
+            'cot_full_response': row['cot_full_response'],
+            'cot_response': row['cot_response'],
+            'cot_score': row['cot_score']
+        }
+
+        # Add traditional reflection data (only once)
+        traditional_data = row['traditional_reflection_data'][0] if row['traditional_reflection_data'] else None
+        if traditional_data:
+            base_row.update({
+                'traditional_reflection_score': traditional_data['score'],
+                'traditional_reflection_response': traditional_data['response'],
+                'traditional_reflection_prompt': traditional_data['reflection_prompt'],
+                'traditional_reflection_full_response': traditional_data['full_response']
+            })
+        
+        # Add multi-layer reflection data
+        for layer_data in row['reflection_data']:
+            new_row = base_row.copy()
             new_row.update({
                 'reflection_layer': layer_data['layer'],
                 'reflection_score': layer_data['score'],
@@ -345,7 +451,6 @@ def save_results(results_df, filename="experiment_results.csv"):
                 'reflection_full_response': layer_data['full_response'],
                 'auto_prompt_used': layer_data['auto_prompt_used']
             })
-            del new_row['reflection_data'] 
             expanded_results.append(new_row)
 
     expanded_df = pd.DataFrame(expanded_results)
@@ -407,19 +512,9 @@ def analyze_results(results_dir="results"):
 
     df = pd.concat(df_list, ignore_index=True)
 
-    # We will group by (dataset, gsm_type, model, question)
-    # and flatten the "base_score", "cot_score", and reflection-layer scores into a single row per question.
-    #
-    # Note: The code from `save_results` can produce multiple rows for each question
-    # (one row per reflection-layer attempt). We want to pivot them so that each
-    # question is represented by exactly one row with columns for reflection_layer_1..3, etc.
-
     def combine_question_data(group):
         """
         Convert multiple reflection-layer rows into one row for a single question.
-        We'll:
-          - read the single base_score/cot_score from the group
-          - read reflection_layer_0..3 from the group if present
         """
         # Base
         base_score_series = group["base_score"].dropna()
@@ -429,7 +524,11 @@ def analyze_results(results_dir="results"):
         cot_score_series = group["cot_score"].dropna()
         cot_score = cot_score_series.iloc[0] if not cot_score_series.empty else 0
 
-        # Reflection layer scores
+        # Traditional reflection
+        traditional_score_series = group["traditional_reflection_score"].dropna()
+        traditional_score = traditional_score_series.iloc[0] if not traditional_score_series.empty else 0
+
+        # Multi-layer reflection scores
         reflection_scores = {}
         for layer in range(4):  # Up to reflection_layer_3 as requested
             match = group[group["reflection_layer"] == layer]
@@ -441,9 +540,10 @@ def analyze_results(results_dir="results"):
         return pd.Series({
             "base_score": base_score,
             "cot_score": cot_score,
-            "reflection_layer_1_score": reflection_scores[1], #Score added considering layer 1
-            "reflection_layer_2_score": reflection_scores[2], #Score added considering layer 2
-            "reflection_layer_3_score": reflection_scores[3], #Score added considering layer 3
+            "traditional_reflection_score": traditional_score,
+            "reflection_layer_1_score": reflection_scores[1],
+            "reflection_layer_2_score": reflection_scores[2],
+            "reflection_layer_3_score": reflection_scores[3],
         })
 
     # Apply the aggregator to get a single row per question
@@ -453,42 +553,49 @@ def analyze_results(results_dir="results"):
         .apply(combine_question_data)
     )
 
-    # Now, for each (dataset, gsm_type, model), we want:
-    # - total_questions
-    # - accuracy for base, CoT, and reflection_layer_1..3
+    # Calculate summary statistics
     summary_df = (
         pivot_df
         .groupby(["dataset", "gsm_type", "model"], as_index=False)
         .agg({
             "base_score": "sum",
             "cot_score": "sum",
+            "traditional_reflection_score": "sum",
             "reflection_layer_1_score": "sum",
             "reflection_layer_2_score": "sum",
             "reflection_layer_3_score": "sum",
-            "question": "count"  # total unique questions
+            "question": "count"
         })
     )
 
     # Rename question->total_questions for clarity
     summary_df.rename(columns={"question": "total_questions"}, inplace=True)
 
-    # Compute the actual accuracy = (number of correct answers) / (total_questions)
+    # Compute accuracies
     summary_df["base_accuracy"] = summary_df["base_score"] / summary_df["total_questions"]
     summary_df["cot_accuracy"] = summary_df["cot_score"] / summary_df["total_questions"]
+    summary_df["traditional_reflection_accuracy"] = summary_df["traditional_reflection_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_1_accuracy"] = summary_df["reflection_layer_1_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_2_accuracy"] = summary_df["reflection_layer_2_score"] / summary_df["total_questions"]
     summary_df["reflection_layer_3_accuracy"] = summary_df["reflection_layer_3_score"] / summary_df["total_questions"]
 
-    # We don't need the raw sums in the final table
+    # Add aggregate columns for multi-layer reflection
+    summary_df["self_reflection_layer_1_only_accuracy"] = summary_df["cot_accuracy"] + summary_df["reflection_layer_1_accuracy"]
+    summary_df["self_reflection_total_accuracy"] = (summary_df["cot_accuracy"] + 
+                                                  summary_df["reflection_layer_1_accuracy"] + 
+                                                  summary_df["reflection_layer_2_accuracy"] + 
+                                                  summary_df["reflection_layer_3_accuracy"])
+
+    # Drop raw score columns
     summary_df.drop(
         columns=[
-            "base_score", "cot_score", "reflection_layer_1_score",
-            "reflection_layer_2_score", "reflection_layer_3_score"
+            "base_score", "cot_score", "traditional_reflection_score",
+            "reflection_layer_1_score", "reflection_layer_2_score", "reflection_layer_3_score"
         ],
         inplace=True
     )
 
-    # Reorder columns as requested
+    # Reorder columns
     summary_df = summary_df[
         [
             "dataset",
@@ -497,19 +604,14 @@ def analyze_results(results_dir="results"):
             "total_questions",
             "base_accuracy",
             "cot_accuracy",
+            "traditional_reflection_accuracy",
             "reflection_layer_1_accuracy",
             "reflection_layer_2_accuracy",
             "reflection_layer_3_accuracy",
+            "self_reflection_layer_1_only_accuracy",
+            "self_reflection_total_accuracy"
         ]
     ]
-
-    # Add new aggregate columns
-    summary_df["self_reflection_layer_1_only_accuracy"] = summary_df["cot_accuracy"] + summary_df["reflection_layer_1_accuracy"] #Total score for method Self Reflection, but only considering layer 1
-    summary_df["self_reflection_total_accuracy"] = (summary_df["cot_accuracy"] + 
-                                                  summary_df["reflection_layer_1_accuracy"] + 
-                                                  summary_df["reflection_layer_2_accuracy"] + 
-                                                  summary_df["reflection_layer_3_accuracy"]) #Total score for method Self Reflection, considering all layers
-
 
     output_path = os.path.join(results_dir, "summary_results.xlsx")
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
