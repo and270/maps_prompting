@@ -661,6 +661,15 @@ def main():
         gsm_types = config.get('gsm_types', ['gsm8-std'])
         models = config.get('models', {})
         
+        # Create valid dataset/gsm_type pairs
+        valid_pairs = []
+        for dataset_name in datasets:
+            for gsm_type in gsm_types:
+                # Enforce that gsm8-std only runs with main dataset
+                if gsm_type == "gsm8-std" and dataset_name != "main":
+                    continue
+                valid_pairs.append((dataset_name, gsm_type))
+        
         dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
 
         tasks = [
@@ -670,8 +679,7 @@ def main():
              else DEEPSEEK_API_KEY if model_info['provider'] == 'deepseek'
              else None,
              config)
-            for dataset_name in datasets
-            for gsm_type in gsm_types
+            for dataset_name, gsm_type in valid_pairs
             for model_info in models.values()
         ]
 

@@ -1,5 +1,5 @@
 {
-    "datasets": ["main"],
+    "datasets": ["main", "p1", "p2"],
     "gsm_types": ["gsm-symbolic", "gsm8-std"],
     "models": {
         "o3-mini": {
