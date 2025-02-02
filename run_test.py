@@ -10,7 +10,7 @@ from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-load_dotenv()
+load_dotenv(override=True)
 
 EIGHT_SHOT_EXAMPLES = """
 See the examples below to guide you on how your answer format should be:
