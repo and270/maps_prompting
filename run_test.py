@@ -74,16 +74,12 @@ The answer is 4.
 
 def prepare_dataset(dataset_type='main'):
     print(f"Loading the {dataset_type} dataset...")
-
     ds = load_dataset("apple/GSM-Symbolic", dataset_type)
     df = pd.DataFrame(ds['test'])
-
     # Select a random sample by "original_id"
     sample = df.groupby("original_id").sample(n=1, random_state=42)
-
     print(f"Dataset {dataset_type} loaded. Size: {len(sample)}.")
     return sample
-
 
 def generate_cot_prompt(question):
     return f"""{EIGHT_SHOT_EXAMPLES}
@@ -151,7 +147,7 @@ Your initial answer was: {answer}
 You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections.
 """
 
-def generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key):
+def generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key, api_provider):
     meta_prompt = f"""You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
@@ -159,7 +155,6 @@ Your task is to modify the Self-Reflection template so that it is as specific an
 *   **Type of problem:** The Self-Reflection prompt should guide the model to solve the specific type of problem presented in the question.
 *   **Common mistakes:** The Self-Reflection prompt should guide the model to identify the common mistakes that are made when solving this type of problem.
 *   **Complexity of the problem:** The Self-Reflection prompt should guide the model to try to understand the complexity of the problem, if more steps arte needed to solve it.
-
 
 Here is the original Self-Reflection template that you should adapt:
 
@@ -198,22 +193,16 @@ Question: {question}
 
 Generate the adapted Self-Reflection prompt (remember, you need to create a similar example question on complexity to the question received (NOT THE SAME ONE), a wrong answer to it and the correct answer):
 """
-
-    adapted_reflection_prompt = query_model(api_key, meta_prompt, auto_prompt_model)
-
+    adapted_reflection_prompt = query_model(api_key, meta_prompt, auto_prompt_model, True, api_provider)
     adapted_reflection_prompt += f"""\n\nNow, look at this question:
 Question: {question}
 Your initial Chain-of-Thought answer was: {previous_incorrect_answers[0] if previous_incorrect_answers else 'None'}"""
-
     if len(previous_incorrect_answers) > 1:
         adapted_reflection_prompt += "\n\nYour previous reflection answers were:"
         for i, answer in enumerate(previous_incorrect_answers[1:], 1):
             adapted_reflection_prompt += f"\nReflection {i}: {answer}"
-    
     adapted_reflection_prompt += """\nYou previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections. Your new answer MUST be different from your previous answers cause they were all incorrect."""
-
     return adapted_reflection_prompt
-
 
 def generate_reanswer_prompt(question, answer, reflection):
     return f"""{EIGHT_SHOT_EXAMPLES}
@@ -242,8 +231,7 @@ def extract_answer_gsm_format(response):
         print(f"Error in extract_answer_gsm_format: {e}")
         return None
 
-
-# Function to interact with models using OpenRouter API
+# Function to interact with models using OpenRouter API (or others)
 def query_model(api_key, prompt, model, supports_sampling_params=True, api_provider="openrouter", max_retries=3):
     for attempt in range(max_retries):
         try:
@@ -296,18 +284,15 @@ def query_model(api_key, prompt, model, supports_sampling_params=True, api_provi
                 "error_type": type(e).__name__,
                 "error_message": str(e),
             }
-            
             print("\nError Details:")
             for key, value in error_details.items():
                 print(f"{key}: {value}")
-            
             if attempt < max_retries - 1:
                 print(f"Retrying in 5 seconds... ({attempt + 1}/{max_retries})")
                 time.sleep(5)
             else:
                 print(f"Failed after {max_retries} attempts.")
                 return None
-
 
 def evaluate_response(response, expected_answer):
     try:
@@ -318,17 +303,15 @@ def evaluate_response(response, expected_answer):
         print(f"Error in evaluate_response: {e}")
         return 0
 
-
 # Main function to run experiments
 def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type, api_provider, supports_sampling_params):
     results = []
     for idx, row in sample.iterrows():
         question = row["original_question"] if gsm_type == "gsm8-std" else row["question"]
         expected_answer = extract_answer_gsm_format(row["original_answer"]) if gsm_type == "gsm8-std" else extract_answer_gsm_format(row["answer"])
-
         print("Expected answer: ", expected_answer)
-
-        # Initialize variables with None/0
+        
+        # Initialize variables with defaults
         base_full_response = None
         base_response = None
         base_score = 0
@@ -360,13 +343,10 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type, api_provide
             if cot_score == 0:
                 traditional_reflection_prompt = generate_auto_reflection_traditional_prompt(question, cot_full_response)
                 traditional_reflection_response = query_model(api_key, traditional_reflection_prompt, model, supports_sampling_params, api_provider)
-                
                 traditional_reanswer_prompt = generate_reanswer_prompt(question, cot_response, traditional_reflection_response)
                 traditional_reanswer_response = query_model(api_key, traditional_reanswer_prompt, model, supports_sampling_params, api_provider)
-                
                 traditional_answer = extract_answer_gsm_format(traditional_reanswer_response)
                 traditional_score = evaluate_response(traditional_answer, expected_answer)
-
                 reflection_data_traditional_method.append({
                     "layer": None,
                     "score": traditional_score,
@@ -388,16 +368,16 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type, api_provide
         # Multi-layer Self-Reflection
         reflection_data_multi_layer__method = []
         if config["test_types"]["run_multi_layer_self_reflection"]:
-            if cot_score == 0:
+            # If the CoT answer is already correct, record it without further reflection.
+            if cot_score == 1:
                 reflection_data_multi_layer__method.append({
                     "layer": 0,
-                    "score": current_score,
-                    "response": current_answer,
+                    "score": cot_score,
+                    "response": cot_response,
                     "reflection_prompt": None,
                     "full_response": None,
                     "auto_prompt_used": None
                 })
-
             else:
                 previous_incorrect_answers = []
                 max_layers = config["max_reflection_layers"]
@@ -406,34 +386,28 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type, api_provide
                 auto_prompt_model = config["auto_prompt_model"]
 
                 for layer in range(max_layers):
-                    
                     previous_incorrect_answers.append(current_answer)
-                    auto_prompt_used = generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key)
-
+                    auto_prompt_used = generate_auto_reflection_auto_adapt_prompt(
+                        question, previous_incorrect_answers, auto_prompt_model, api_key, api_provider
+                    )
                     reflection_prompt = auto_prompt_used
                     reflection_full_response = query_model(api_key, reflection_prompt, model, supports_sampling_params, api_provider)
-
                     reanswer_prompt = generate_reanswer_prompt(question, current_answer, reflection_full_response)
                     reanswer_full_response = query_model(api_key, reanswer_prompt, model, supports_sampling_params, api_provider)
-
                     current_answer = extract_answer_gsm_format(reanswer_full_response)
                     current_score = evaluate_response(current_answer, expected_answer)
-                    
                     reflection_data_multi_layer__method.append({
-                            "layer": layer+1,
-                            "score": current_score,
-                            "response": current_answer,
-                            "reflection_prompt": reflection_prompt,
-                            "full_response": reflection_full_response,
-                            "auto_prompt_used": auto_prompt_used
+                        "layer": layer + 1,
+                        "score": current_score,
+                        "response": current_answer,
+                        "reflection_prompt": reflection_prompt,
+                        "full_response": reflection_full_response,
+                        "auto_prompt_used": auto_prompt_used
                     })
-
-                    print(f"Reflection (layer {layer+1}) response: {current_answer} - Score: {current_score}")
-
+                    print(f"Reflection (layer {layer + 1}) response: {current_answer} - Score: {current_score}")
                     if current_score == 1:
                         break
 
-            
         results.append({
             "dataset": dataset_name,
             "gsm_type": gsm_type,
@@ -451,12 +425,10 @@ def run_gsm8(sample, api_key, config, model, dataset_name, gsm_type, api_provide
         })
     return pd.DataFrame(results)
 
-
 def save_results(results_df, filename="experiment_results.csv"):
     directory = os.path.dirname(filename)
     if directory and not os.path.exists(directory):
         os.makedirs(directory)
-
     expanded_results = []
     for _, row in results_df.iterrows():
         base_row = {
@@ -465,46 +437,63 @@ def save_results(results_df, filename="experiment_results.csv"):
             'model': row['model'],
             'question': row['question'],
             'expected_answer': row['expected_answer'],
-            'base_full_response': row['base_full_response'],
-            'base_response': row['base_response'],
-            'base_score': row['base_score'],
-            'cot_full_response': row['cot_full_response'],
-            'cot_response': row['cot_response'],
-            'cot_score': row['cot_score']
+            'base_full_response': row.get('base_full_response', None),
+            'base_response': row.get('base_response', None),
+            'base_score': row.get('base_score', 0),
+            'cot_full_response': row.get('cot_full_response', None),
+            'cot_response': row.get('cot_response', None),
+            'cot_score': row.get('cot_score', 0),
+            'reflection_layer': None,
+            'reflection_score': None,
+            'reflection_response': None,
+            'reflection_prompt': None,
+            'reflection_full_response': None,
+            'auto_prompt_used': None,
+            'traditional_reflection_score': None,
+            'traditional_reflection_response': None,
+            'traditional_reflection_prompt': None,
+            'traditional_reflection_full_response': None,
+            'traditional_auto_prompt_used': None
         }
-
-        # Always add the base row (contains CoT results) even without reflections
+        # Add base row
         expanded_results.append(base_row.copy())
-
-        # Add traditional reflection data (only once) if exists
-        if row['traditional_reflection_data']:
+        # Add traditional reflection data if it exists
+        if row.get('traditional_reflection_data') and len(row['traditional_reflection_data']) > 0:
             traditional_data = row['traditional_reflection_data'][0]
             trad_row = base_row.copy()
-            trad_row.update({
-                'traditional_reflection_score': traditional_data['score'],
-                'traditional_reflection_response': traditional_data['response'],
-                'traditional_reflection_prompt': traditional_data['reflection_prompt'],
-                'traditional_reflection_full_response': traditional_data['full_response'],
-                'traditional_auto_prompt_used': traditional_data['auto_prompt_used']
-            })
-            expanded_results.append(trad_row)
-
-        # Add multi-layer reflection data if exists
-        for layer_data in row['reflection_data']:
-            reflection_row = base_row.copy()
-            reflection_row.update({
-                'reflection_layer': layer_data['layer'],
-                'reflection_score': layer_data['score'],
-                'reflection_response': layer_data['response'],
-                'reflection_prompt': layer_data['reflection_prompt'],
-                'reflection_full_response': layer_data['full_response'],
-                'auto_prompt_used': layer_data['auto_prompt_used']
-            })
-            expanded_results.append(reflection_row)
-
-    expanded_df = pd.DataFrame(expanded_results)
-    expanded_df.to_csv(filename, index=False)
-    print(f"Results saved to {filename}")
+            if traditional_data:
+                trad_row.update({
+                    'traditional_reflection_score': traditional_data.get('score', None),
+                    'traditional_reflection_response': traditional_data.get('response', None),
+                    'traditional_reflection_prompt': traditional_data.get('reflection_prompt', None),
+                    'traditional_reflection_full_response': traditional_data.get('full_response', None),
+                    'traditional_auto_prompt_used': traditional_data.get('auto_prompt_used', None)
+                })
+                expanded_results.append(trad_row)
+        # Add multi-layer reflection data if it exists
+        if row.get('reflection_data'):
+            for layer_data in row['reflection_data']:
+                if layer_data:
+                    reflection_row = base_row.copy()
+                    reflection_row.update({
+                        'reflection_layer': layer_data.get('layer', None),
+                        'reflection_score': layer_data.get('score', None),
+                        'reflection_response': layer_data.get('response', None),
+                        'reflection_prompt': layer_data.get('reflection_prompt', None),
+                        'reflection_full_response': layer_data.get('full_response', None),
+                        'auto_prompt_used': layer_data.get('auto_prompt_used', None)
+                    })
+                    expanded_results.append(reflection_row)
+    try:
+        expanded_df = pd.DataFrame(expanded_results)
+        expanded_df.to_csv(filename, index=False)
+        print(f"Results saved to {filename}")
+    except Exception as e:
+        print(f"Error saving results to CSV: {e}")
+        fallback_filename = filename.replace('.csv', '.json')
+        with open(fallback_filename, 'w') as f:
+            json.dump(expanded_results, f, indent=2)
+        print(f"Results saved to fallback JSON file: {fallback_filename}")
 
 # Function to load configuration from config.json
 def load_config():
@@ -516,16 +505,13 @@ def worker(args):
     dataset_name, gsm_type, model_info, sample, API_KEY, config = args
     try:
         local_config = config.copy()
-        
         # Extract model info
         model_name = model_info['name']
         api_provider = model_info['provider']
         supports_sampling_params = model_info.get('supports_sampling_params', True)
-        
         # If auto_prompt_model is set to "same", use the current model also for the auto prompt
         if local_config['auto_prompt_model'] == "same":
             local_config['auto_prompt_model'] = model_name
-
         print(f"\nExecuting test with:")
         print(f"Dataset: {dataset_name}")
         print(f"GSM type: {gsm_type}")
@@ -534,15 +520,20 @@ def worker(args):
         print(f"Supports sampling params: {supports_sampling_params}")
         print(f"Max Reflection Layers: {local_config['max_reflection_layers']}")
         print(f"Auto Prompt Model: {local_config['auto_prompt_model']}")
-
+        # Get the correct API key based on the provider specified in config
+        api_key_map = {
+            'openrouter': os.getenv("OPENROUTER_API_KEY"),
+            'openai': os.getenv("OPENAI_API_KEY"),
+            'deepseek': os.getenv("DEEPSEEK_API_KEY")
+        }
+        API_KEY = api_key_map.get(api_provider)
+        if not API_KEY:
+            raise ValueError(f"No API key found for provider: {api_provider}")
         safe_model_name = model_name.replace("/", "_")
         results_df = run_gsm8(sample, API_KEY, local_config, model_name, dataset_name, gsm_type, api_provider, supports_sampling_params)
-        
         results_dir = "results"
         if not os.path.exists(results_dir):
             os.makedirs(results_dir)
-            
-        # Change filename generation to use validated parameters
         safe_dataset_name = dataset_name.replace("/", "_")
         safe_gsm_type = gsm_type.replace("-", "_")
         save_results(results_df, f"{results_dir}/results_{safe_dataset_name}_{safe_gsm_type}_{safe_model_name}.csv")
@@ -551,28 +542,22 @@ def worker(args):
 
 def analyze_results(results_dir="results"):
     """
-    Analyze all expanded results CSV files (produced by `save_results`) in `results_dir`
-    and create a single Excel file summarizing the accuracy at each method/level.
+    Analyze all expanded results CSV files in `results_dir` and create a single Excel file summarizing the accuracy.
     """
     all_files = [f for f in os.listdir(results_dir) if f.endswith(".csv")]
     if not all_files:
         print("No CSV results files found in the directory.")
         return
-
     df_list = []
     for file in all_files:
         file_path = os.path.join(results_dir, file)
         temp_df = pd.read_csv(file_path)
         df_list.append(temp_df)
-
     if not df_list:
         print("No data found in the results directory.")
         return
-
     df = pd.concat(df_list, ignore_index=True)
-
     def combine_question_data(group):
-        """Handle missing columns dynamically"""
         scores = {
             "base_score": 0,
             "cot_score": 0,
@@ -581,13 +566,10 @@ def analyze_results(results_dir="results"):
             "reflection_layer_2_score": 0,
             "reflection_layer_3_score": 0,
         }
-
-        # Update only existing scores
         for score in scores.keys():
             if score in group.columns:
                 score_series = group[score].dropna()
                 scores[score] = score_series.iloc[0] if not score_series.empty else 0
-
         return pd.Series({
             "base_score": scores["base_score"],
             "cot_score": scores["cot_score"],
@@ -595,17 +577,13 @@ def analyze_results(results_dir="results"):
             "reflection_layer_1_score": scores["reflection_layer_1_score"],
             "reflection_layer_2_score": scores["reflection_layer_2_score"],
             "reflection_layer_3_score": scores["reflection_layer_3_score"],
-            "question": group["question"].iloc[0]  # Preserve original question
+            "question": group["question"].iloc[0]
         })
-
-    # Apply the aggregator to get a single row per question
     pivot_df = (
         df
         .groupby(["dataset", "gsm_type", "model", "question"], as_index=False)
         .apply(combine_question_data)
     )
-
-    # Calculate summary statistics
     summary_df = (
         pivot_df
         .groupby(["dataset", "gsm_type", "model"], as_index=False)
@@ -619,61 +597,41 @@ def analyze_results(results_dir="results"):
             "question": "count"
         })
     )
-
-    # Rename question->total_questions for clarity
     summary_df.rename(columns={"question": "total_questions"}, inplace=True)
-
-    # Dynamic accuracy calculation
     accuracy_columns = []
     if "base_score" in summary_df.columns:
         summary_df["base_accuracy"] = summary_df["base_score"] / summary_df["total_questions"]
         accuracy_columns.append("base_accuracy")
-    
     if "cot_score" in summary_df.columns:
         summary_df["cot_accuracy"] = summary_df["cot_score"] / summary_df["total_questions"]
         accuracy_columns.append("cot_accuracy")
-    
-    # Similar conditional checks for other scores...
-    
-    # Finally, keep only relevant columns
     keep_columns = ["dataset", "gsm_type", "model", "total_questions"] + accuracy_columns
     summary_df = summary_df[keep_columns]
-
     output_path = os.path.join(results_dir, "summary_results.xlsx")
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         summary_df.to_excel(writer, index=False, sheet_name="Summary")
-
     print(f"Summary results saved to {output_path}")
 
 def main():
-    # Load different API keys from environment
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
-    
     config = load_config()
-
     run_test = config.get('run_test', False)
     run_analysis = config.get('run_analysis', False)
-
     if run_test:
         datasets = config.get('datasets', ['main'])
         gsm_types = config.get('gsm_types', ['gsm8-std'])
         models = config.get('models', {})
-        
-        # Create valid dataset/gsm_type pairs
         valid_pairs = []
         for dataset_name in datasets:
             for gsm_type in gsm_types:
-                # Enforce that gsm8-std only runs with main dataset
                 if gsm_type == "gsm8-std" and dataset_name != "main":
                     continue
                 valid_pairs.append((dataset_name, gsm_type))
-        
         dataset_samples = {dataset_name: prepare_dataset(dataset_name) for dataset_name in datasets}
-
         tasks = [
-            (dataset_name, gsm_type, model_info, dataset_samples[dataset_name], 
+            (dataset_name, gsm_type, model_info, dataset_samples[dataset_name],
              OPENROUTER_API_KEY if model_info['provider'] == 'openrouter'
              else OPENAI_API_KEY if model_info['provider'] == 'openai'
              else DEEPSEEK_API_KEY if model_info['provider'] == 'deepseek'
@@ -682,14 +640,10 @@ def main():
             for dataset_name, gsm_type in valid_pairs
             for model_info in models.values()
         ]
-
-        # Use ThreadPoolExecutor to run tasks in parallel
         max_workers = min(len(tasks), 10)
         print(f"Starting {len(tasks)} tasks with {max_workers} workers...")
-        
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             list(executor.map(worker, tasks))
-
     if run_analysis:
         analyze_results()
 
