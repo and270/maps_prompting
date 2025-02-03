@@ -1,0 +1,1020 @@
+dataset,gsm_type,model,question,expected_answer,base_full_response,base_response,base_score,cot_full_response,cot_response,cot_score
+p2,gsm-symbolic,o3-mini-2025-01-31,"Sophia went to the bakery and bought various types of pastries. She bought 60 donuts at $19 per dozen, 60 mini cupcakes at $33 per dozen, and 60 mini cheesecakes. After a 20% discount, she paid a total of $1500. What was the cost of mini cheesecakes per dozen?",323.0,,,0,"Let's think step by step.
+1. Sophia bought 60 donuts at $19 per dozen. Since 1 dozen equals 12 donuts, she bought 60 ÷ 12 = 5 dozens of donuts. The cost for the donuts is 5 × $19 = $95.
+2. She also bought 60 mini cupcakes at $33 per dozen. That is 5 dozens as well, so the cost for the cupcakes is 5 × $33 = $165.
+3. For the 60 mini cheesecakes, let the cost per dozen be x dollars. Since she bought 60 mini cheesecakes, that equals 5 dozens, with a total cost of 5x dollars.
+4. The total original price for all items is the sum of the donuts, cupcakes, and cheesecakes: $95 + $165 + 5x = $260 + 5x.
+5. Sophia received a 20% discount, which means she paid 80% of the original total. Therefore, the discounted total is 0.8 × (260 + 5x).
+6. According to the problem, after the discount she paid $1500. Hence, we have the equation:
+  0.8 × (260 + 5x) = 1500.
+7. Simplify the equation:
+  0.8 × 260 = 208 and 0.8 × 5x = 4x, so:
+  208 + 4x = 1500.
+8. Solve for x:
+  4x = 1500 - 208 = 1292,
+  x = 1292 ÷ 4 = 323.
+9. Therefore, the cost of mini cheesecakes per dozen is $323.
+The answer is 323.",323.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"According to its nutritional info, a bag of popcorn has 200 calories per serving. A 300 grams bag has 6 servings. The healthy daily calorie target is 15 calories per pound of body weight. Hiroshi weighs 220 lbs, and he has already consumed 1100 calories and burned 200 calories through exercise. Tara weighs 140 lbs, and she has already consumed 900 in food and 200 calories in ice cream. How many more grams of popcorn does Hiroshi need to consume than Tara?",350.0,,,0,"Let's think step by step.
+
+1. First, find each person’s healthy daily calorie target using 15 calories per pound.
+   • Hiroshi’s target = 220 lbs × 15 = 3300 calories.
+   • Tara’s target = 140 lbs × 15 = 2100 calories.
+
+2. Next, determine how many calories each has effectively already consumed.
+   • For Hiroshi, he has consumed 1100 calories and burned 200 calories through exercise. His net consumption = 1100 – 200 = 900 calories.
+   • For Tara, she has consumed 900 calories from food plus 200 calories from ice cream, totaling 900 + 200 = 1100 calories.
+
+3. Calculate the remaining calories allowed before reaching the daily target.
+   • Hiroshi’s remaining calories = 3300 (target) – 900 (net consumed) = 2400 calories.
+   • Tara’s remaining calories = 2100 (target) – 1100 (consumed) = 1000 calories.
+
+4. Now, examine the popcorn nutritional information. A serving of popcorn is 200 calories and a 300 grams bag contains 6 servings.
+   • Total calories in 300 grams = 6 × 200 = 1200 calories.
+   • Therefore, calories per gram = 1200 calories / 300 grams = 4 calories per gram.
+
+5. Determine how many grams of popcorn each person would need to reach their remaining calorie allowance.
+   • For Hiroshi: 2400 calories ÷ 4 calories/gram = 600 grams of popcorn.
+   • For Tara: 1000 calories ÷ 4 calories/gram = 250 grams of popcorn.
+
+6. Finally, find the difference in the amount of popcorn required.
+   • Difference = 600 grams – 250 grams = 350 grams.
+
+The answer is 350.",350.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Daphne is an avid gardener. Two days ago, she received 23 new potted plants from her favorite plant nursery. She already has 8 potted plants on each of the 56 window ledges of her large country home. She also purchased 200 new plants yesterday at a 50% discount. Feeling generous, she has decided that she will give 6 potted plants from each ledge to friends and family tomorrow. How many potted plants will Daphne remain with?",335.0,,,0,"Let's think step by step.
+
+1. Daphne has window ledges with potted plants already. There are 56 ledges with 8 plants on each. This amounts to 56 * 8 = 448 plants.
+
+2. Two days ago, she received an additional 23 potted plants from the nursery.
+
+3. Yesterday, she purchased 200 new plants.
+
+4. So before giving any plants away, Daphne has a total of 448 + 23 + 200 = 671 potted plants.
+
+5. However, she plans to give away 6 potted plants from each of the 56 ledges. This means she will give away 56 * 6 = 336 plants.
+
+6. Since the plants given away come from the ledges, after giving them away, only 8 - 6 = 2 plants remain on each ledge. That totals 56 * 2 = 112 plants still on the ledges.
+
+7. The extra plants (the 23 from the nursery and the 200 purchased yesterday) remain unchanged, so together these add up to 23 + 200 = 223 plants.
+
+8. Therefore, the total number of potted plants Daphne remains with is 112 (from the ledges) + 223 (the additional plants) = 335.
+
+The answer is 335.",335.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A fog bank rolls in from the ocean to cover a city. It takes 60 minutes to cover every 4 miles of the city. However, we know that the wind speed is going to be halved in one hour. If the city is 80 miles across from the oceanfront to the opposite inland edge, how many minutes will it take for the fog bank to cover 1/4 of the city?",540.0,,,0,"Let's think step by step.
+
+1. The city is 80 miles across. One‑fourth of the city is 80 ÷ 4 = 20 miles.
+2. Initially, the fog bank covers 4 miles in 60 minutes (i.e. a speed of 4 miles per hour). So, in the first hour, it covers 4 miles.
+3. After one hour, the wind speed is halved, so the fog bank now moves at 2 miles per hour.
+4. The remaining distance to cover to reach 20 miles is 20 − 4 = 16 miles.
+5. At 2 miles per hour, covering 16 miles takes 16 ÷ 2 = 8 hours (which is 8 × 60 = 480 minutes).
+6. Adding the initial hour (60 minutes) to these 480 minutes gives a total time of 60 + 480 = 540 minutes.
+
+The answer is 540.",540.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Santiago watches TV after he finishes his homework every night. On Tuesday and Wednesday, he watched 4-hour episodes of his favorite show each night. On Thursday, he watched a few episodes of a 15-minute show. On Friday, he finished homework early and watched a 3-hour episode and a 45-minute show. On Saturday, he got to stay up late, so he watched three 2-hour episodes. On Sunday, he watched three episodes, each 15 minutes. If he watched 20 hours of TV in all, how many 15-minute episodes did he watch on Thursday?",6.0,,,0,"Let's think step by step.
+
+1. On Tuesday and Wednesday, Santiago watched 4 hours each night. That totals 4 + 4 = 8 hours.  
+2. On Friday, he watched a 3‑hour episode and a 45‑minute show. Since 45 minutes is 0.75 hours, Friday’s total is 3 + 0.75 = 3.75 hours.  
+3. On Saturday, he watched three 2‑hour episodes. That gives him 3 × 2 = 6 hours.  
+4. On Sunday, he watched three 15‑minute episodes. Since 15 minutes is 0.25 hours, Sunday’s total is 3 × 0.25 = 0.75 hours.  
+5. Let x be the number of 15‑minute episodes he watched on Thursday. Each episode is 0.25 hours, so Thursday’s total viewing time is 0.25x hours.
+
+Adding all these, the total viewing time is:  
+8 + 3.75 + 6 + 0.75 + 0.25x = 20 hours.
+
+Now, combine the known hours:  
+8 + 3.75 + 6 + 0.75 = 18.5 hours.  
+So, 18.5 + 0.25x = 20.
+
+Subtract 18.5 from both sides to isolate 0.25x:  
+0.25x = 20 - 18.5 = 1.5.
+
+Now, solve for x:  
+x = 1.5 / 0.25 = 6.
+
+The answer is 6.",6.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Nia makes tea using teaspoons of sugar and cups of water in a ratio of 54:27. She also uses 8 tablespoons of milk for every 8 cups of water, and uses 2 tablespoons of heavy cream for every teaspoon of sugar. She used a total of 240 teaspoons of sugar, cups of water, tablespoons of cream, and tablespoons of milk. How many teaspoons of sugar did she use?",60.0,,,0,"Let's think step by step.
+
+1. Nia makes the tea using a sugar to water ratio of 54:27, which simplifies to 2:1. This means for every 2 teaspoons of sugar, there is 1 cup of water.
+
+2. Let the number of teaspoons of sugar be S. Then the number of cups of water is S/2.
+
+3. The recipe states she uses 8 tablespoons of milk for every 8 cups of water, which means the number of tablespoons of milk equals the number of cups of water. So, milk = S/2.
+
+4. She also uses 2 tablespoons of heavy cream for every teaspoon of sugar, so the tablespoons of cream equal 2S.
+
+5. Adding all the ingredients together, we have:
+   - Teaspoons of sugar: S
+   - Cups of water: S/2
+   - Tablespoons of milk: S/2
+   - Tablespoons of cream: 2S
+
+   Total = S + (S/2) + (S/2) + 2S
+
+6. Simplify the sum:
+   S + S/2 + S/2 = S + S = 2S, and then 2S + 2S = 4S
+
+7. The total amount of all ingredients is given as 240 (in their respective units), so:
+   4S = 240
+
+8. Solving for S:
+   S = 240 / 4 = 60
+
+The answer is 60.",60.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Aisha was preparing for a lunch party at her house, where she intended to serve stuffed peppers. She noticed that she was out of plastic forks, so she bought a new package of forks. Later, her husband also bought a package of 8 new forks and gave them to Aisha. While Aisha was making the stuffed peppers, she used sixteen of the forks to sample her stuffed peppers, then threw away 6 defective forks. The guests also brought 2 packs of forks, each having 6 inside them. Later, when she went to set the table, she had a total of 32 forks. How many forks were in the package that Aisha bought?",34.0,,,0,"Let's think step by step.
+
+1. Aisha bought a package of forks with an unknown number of forks; let that number be F.  
+2. Her husband then gave her a package of 8 forks, so together she had F + 8 forks.  
+3. While preparing the food, she used 16 forks to sample her stuffed peppers. Out of these 16 used forks, 6 were found defective and thrown away. This means that the 10 remaining sampled forks were still good and ended up back in her total. In other words, although 16 forks were taken out temporarily, the net loss from her collection was only the 6 defective forks.  
+4. Therefore, from her original collection of F + 8 forks, after discarding the 6 defective ones, she was left with (F + 8 – 6) = F + 2 usable forks.  
+5. Then, the guests brought 2 packs of forks with 6 forks in each, which adds 2 × 6 = 12 forks.  
+6. At the end, when she went to set the table, she had a total of 32 forks. This total equals the forks remaining from her collection plus the guest forks:
+  F + 2 + 12 = F + 14.
+7. Setting up the equation:
+  F + 14 = 32.
+8. Solve for F:
+  F = 32 – 14  
+  F = 18.
+
+The answer is 18.",18.0,0
+p2,gsm-symbolic,o3-mini-2025-01-31,"Ravi has 10 square yards of banana field. There are 36 bananas per four-fifths of a square yard. Ravi can harvest his bananas every 4 months. In addition, Ravi owns a 13-square yard apricot field that produces 12 apricots per square yard. The apricots can be harvested every 4 months. In the span of two years, how many more bananas does Ravi harvest than apricots?",1764.0,,,0,"Let's think step by step.
+
+1. Bananas per square yard:
+ • Ravi has 36 bananas per 4/5 of a square yard.
+ • To find the number of bananas per 1 square yard, divide 36 by (4/5):  
+  36 ÷ (4/5) = 36 × (5/4) = 45 bananas per square yard.
+
+2. Bananas harvested in one cycle:
+ • Ravi's banana field is 10 square yards.
+ • So, in one harvest, he gets 10 × 45 = 450 bananas.
+
+3. Apricots harvested in one cycle:
+ • The apricot field is 13 square yards with 12 apricots per square yard.
+ • Hence, in one harvest, he gets 13 × 12 = 156 apricots.
+
+4. Number of harvest cycles in two years:
+ • Ravi harvests every 4 months.
+ • Two years = 24 months, so the number of harvests is 24 ÷ 4 = 6 cycles.
+
+5. Total harvest in two years:
+ • Total bananas = 450 bananas/cycle × 6 cycles = 2700 bananas.
+ • Total apricots = 156 apricots/cycle × 6 cycles = 936 apricots.
+
+6. Difference between bananas and apricots:
+ • Increase = 2700 - 936 = 1764.
+
+The answer is 1764.",1764.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Arjun went to buy some school supplies. He bought 12 folders which cost $4.75 each, 8 erasers which cost $14.5 each, and a ream of bond paper which cost $11. He also bought 7 pencils which cost $8 each. Arjun can either pay a one-time $20 fee to become a member and get a 20% discount on all purchases, or not become a member and receive only a 5% discount. What is the least amount Arjun can spend on everything?",212.0,,,0,"Let's think step by step.
+
+1. First, calculate the total cost before any discount:
+ • Folders: 12 × $4.75 = $57  
+ • Erasers: 8 × $14.5 = $116  
+ • Bond paper: 1 × $11 = $11  
+ • Pencils: 7 × $8 = $56  
+ • Total cost = $57 + $116 + $11 + $56 = $240
+
+2. Next, calculate the cost without membership (5% discount):
+ • Discount = 5% of $240 = 0.05 × 240 = $12  
+ • Total cost as a non-member = $240 − $12 = $228
+
+3. Now, calculate the cost with membership (20% discount plus a $20 fee):
+ • Discount = 20% of $240 = 0.20 × 240 = $48  
+ • Discounted cost = $240 − $48 = $192  
+ • Add the membership fee of $20: Total cost = $192 + $20 = $212
+
+Since $212 (with membership) is less than $228 (without membership), the least amount Arjun can spend is $212.
+
+The answer is 212.",212.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Yusuf is rolling a twenty-sided die. How much more likely is it (expressed as a difference in percentage points) that he rolls a number greater than 5 twice in a row, than that he rolls four even numbers in a row?",50.0,,,0,"Let's think step by step.
+
+1. The die has 20 sides, so the total outcomes per roll is 20.
+
+2. Rolling a number greater than 5 means the outcome is one of {6, 7, 8, ..., 20}. There are 15 outcomes (since 20 - 5 = 15).  
+   Probability for one roll = 15/20 = 0.75 or 75%.
+
+3. For two rolls in a row, the probability is (15/20) × (15/20) = (0.75)² = 0.5625, which is 56.25%.
+
+4. Now, rolling an even number on a twenty-sided die: there are 10 even outcomes (2, 4, 6, ..., 20).  
+   Probability for one roll = 10/20 = 0.5 or 50%.
+
+5. For four rolls in a row, the probability is (0.5)⁴ = 0.0625, which is 6.25%.
+
+6. The difference in probability is 56.25% − 6.25% = 50 percentage points.
+
+The answer is 50.",50.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Mia went to her greenhouse to pick some blueberries and found 2/3 as many beetles as bees in the plot. Mia then found 26 white animals, half of which were rabbits. In addition, she saw 24 wasps, and 9 bees. What percentage of animals in the plot were rabbits?",20.0,,,0,"Let's think step by step.
+
+1. Mia saw 9 bees.  
+2. She found 2/3 as many beetles as bees, so the number of beetles is (2/3) × 9 = 6.  
+3. She also found 26 white animals, half of which were rabbits. Therefore, the number of rabbits is 26 ÷ 2 = 13.  
+4. In addition, she saw 24 wasps.  
+
+Now, let's calculate the total number of animals in the plot by adding all the groups together:
+Total animals = Bees (9) + Beetles (6) + White animals (26) + Wasps (24) = 9 + 6 + 26 + 24 = 65.
+
+Finally, to find the percentage of animals that were rabbits:
+Percentage of rabbits = (Number of rabbits / Total animals) × 100  
+= (13 / 65) × 100  
+= 20%.
+
+The answer is 20%.",20.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Mrs. Lee is looking for a new townhouse that will not go beyond her $340000 budget. She saw a property that has a selling price of $400000. On top of that, the buyer has to pay a brokerage fee which is 5% of the selling price, and also the transfer fee that is 12% of the selling price. If Mrs. Lee can get 25% discount on the selling price, how much more will be the total cost than Mrs. Lee's budget?",11000.0,,,0,"Let's think step by step.
+
+1. The original selling price of the townhouse is $400,000.
+2. With a 25% discount, the discounted selling price is calculated as:
+  Discount = 25% of $400,000 = 0.25 × $400,000 = $100,000.
+  Discounted selling price = $400,000 - $100,000 = $300,000.
+3. The brokerage fee is 5% of the selling price. Since the discount applies to the selling price, we calculate:
+  Brokerage fee = 5% of $300,000 = 0.05 × $300,000 = $15,000.
+4. The transfer fee is 12% of the selling price:
+  Transfer fee = 12% of $300,000 = 0.12 × $300,000 = $36,000.
+5. Now, add up all the costs:
+  Total cost = Discounted selling price + Brokerage fee + Transfer fee
+  Total cost = $300,000 + $15,000 + $36,000 = $351,000.
+6. Mrs. Lee’s budget is $340,000. The amount by which the total cost exceeds her budget is:
+  Excess cost = $351,000 - $340,000 = $11,000.
+
+The answer is $11,000.",11000.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Dr. Brown sold his villa for $550000. He paid the legal fees that amounted to 2% of the selling price and also paid a realtor fee that is 5% of the selling price. He also paid $440000 for the remaining loan amount on the villa, and $5000 for closing costs. Dr. Brown used the net proceeds from selling the villa to invest in stocks. The stocks gained 10% each year for two years. How much were Dr. Brown's net proceeds after two years?",80465.0,,,0,"Let's think step by step.
+
+1. Dr. Brown sold his villa for $550,000.
+
+2. He paid legal fees of 2% of the selling price:
+  Legal fees = 0.02 × 550,000 = $11,000.
+
+3. He also paid a realtor fee of 5% of the selling price:
+  Realtor fee = 0.05 × 550,000 = $27,500.
+
+4. Adding up the fees:
+  Total fees = $11,000 + $27,500 = $38,500.
+
+5. He then paid $440,000 for the remaining loan on the villa and $5,000 for closing costs. So, the other expenses are:
+  Loan payment = $440,000,
+  Closing costs = $5,000.
+
+6. Now, calculate the total deductions from the selling price:
+  Total deductions = Total fees + Loan payment + Closing costs
+    = $38,500 + $440,000 + $5,000
+    = $483,500.
+
+7. Compute his net proceeds from the sale:
+  Net proceeds = Selling price − Total deductions
+    = $550,000 − $483,500
+    = $66,500.
+
+8. Dr. Brown invested these net proceeds in stocks that gained 10% each year for two years. To find the final amount after two years, we use compound interest:
+  Final amount = Net proceeds × (1 + 0.10)²
+    = $66,500 × (1.10)²
+    = $66,500 × 1.21
+    = $80,465.
+
+The answer is $80,465.",80465.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A juggler can juggle 160 balls. 1/5 of the balls are golf balls, and the rest are tennis balls. 1/2 of the golf balls are yellow, of which 1/8 are marked. An eighth of the tennis balls are indigo, and all except an eighth of those indigo balls are marked. How many marked balls are there in total?",16.0,,,0,"Let's think step by step.
+
+1. The juggler has a total of 160 balls.
+
+2. One-fifth of the balls are golf balls:
+   - Number of golf balls = (1/5) × 160 = 32.
+
+3. The rest of the balls are tennis balls:
+   - Number of tennis balls = 160 − 32 = 128.
+
+4. For golf balls:
+   - Half of the golf balls are yellow: (1/2) × 32 = 16 yellow golf balls.
+   - Of these yellow golf balls, 1/8 are marked: (1/8) × 16 = 2 marked golf balls.
+
+5. For tennis balls:
+   - One-eighth of the tennis balls are indigo: (1/8) × 128 = 16 indigo tennis balls.
+   - All except an eighth of these indigo tennis balls are marked, meaning (7/8) of them are marked:
+     Marked tennis balls = (7/8) × 16 = 14.
+
+6. Finally, add the marked balls from both groups:
+   - Total marked balls = 2 (from golf balls) + 14 (from tennis balls) = 16.
+
+The answer is 16.",16.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"There are 16 girls in the park. If there are one-fourth the number of boys in the park, what percentage of the kids in the park are girls?",80.0,,,0,"Let's think step by step.
+There are 16 girls in the park.
+According to the problem, the number of boys is one-fourth the number of girls. So, the number of boys is 16 / 4 = 4.
+The total number of kids in the park is the sum of girls and boys: 16 + 4 = 20.
+To find the percentage of the kids who are girls, we divide the number of girls by the total number of kids and then multiply by 100:
+(16 / 20) × 100 = 80%.
+The answer is 80%.",80.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Priya went to the beach for vacation. Her parents gave her ₺1200 to buy whatever she wanted. At the souvenir store, fudge was on sale for ""Buy 15 kgs at ₺22 per kg, get 4 kgs 1/4 off."" She scooped up 21 kgs. She also bought a mixed bag of sand dollars for ₺11.0 and 12 postcards that were ₺21.0 each. Priya then donated ₺5 at a charity stand along the way. How much money does Priya have left?",492.0,,,0,"Let's think step by step.
+
+1. First, calculate the cost of the fudge. The store’s offer states:
+  • Buy 15 kgs at ₺22 per kg.
+  • Get 4 kgs at 1/4 off (which means a 25% discount on ₺22 per kg, so these kgs cost 22 × ¾ = ₺16.50 per kg).
+
+2. Priya scooped up a total of 21 kgs of fudge. We can break this into three parts:
+  a. The first 15 kgs at full price.
+  b. The next 4 kgs at the discounted price.
+  c. The remaining 2 kgs (since 15 + 4 = 19 kgs, and 21 – 19 = 2) at full price.
+
+3. Now, compute each part:
+  a. Cost for 15 kgs at full price:
+   15 kg × ₺22 = ₺330.
+  b. Cost for 4 kgs at discounted price:
+   4 kg × ₺16.50 = ₺66.
+  c. Cost for the extra 2 kgs at full price:
+   2 kg × ₺22 = ₺44.
+
+4. Total cost for the fudge:
+  ₺330 + ₺66 + ₺44 = ₺440.
+
+5. Next, calculate the cost of her other purchases:
+  • A mixed bag of sand dollars for ₺11.0.
+  • 12 postcards at ₺21.0 each:
+   12 × ₺21 = ₺252.
+  • A donation of ₺5.
+
+6. Sum up all her expenditures:
+  • Fudge: ₺440
+  • Sand dollars: ₺11
+  • Postcards: ₺252
+  • Donation: ₺5
+  Total cost = ₺440 + ₺11 + ₺252 + ₺5 = ₺708.
+
+7. Finally, subtract the total cost from the money she had:
+  Starting money: ₺1200
+  Money left = ₺1200 – ₺708 = ₺492.
+
+The answer is ₺492.",492.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Jamal's dog has 131 puppies, 23 of which have spots. Gabriel's dog has 47 puppies, 13 of which have spots. Yuki has 54 dogs, each having 13 puppies with spots. After a visit to the vet, Jamal discovered that half of his unspotted puppies actually have spots that were not visible before. What percentage of all the puppies have spots?",90.0,,,0,"Let's think step by step.
+
+1. Jamal's dog:
+ • Total puppies = 131.
+ • Initially, spotted puppies = 23, so unspotted puppies = 131 – 23 = 108.
+ • The vet discovered that half of these unspotted puppies actually have spots. That is 108 / 2 = 54 additional spotted puppies.
+ • Thus, the updated spotted count for Jamal’s puppies = 23 + 54 = 77.
+
+2. Gabriel's dog:
+ • Total puppies = 47.
+ • Spotted puppies = 13.
+
+3. Yuki’s dogs:
+ • Yuki has 54 dogs, and each dog has 13 puppies with spots.
+ • Thus, the total number of spotted puppies from Yuki’s dogs = 54 × 13 = 702.
+ • (Since each puppy mentioned is spotted, all 702 are counted as spotted.)
+
+4. Now, calculate the totals:
+ • Total puppies overall = Jamal’s 131 + Gabriel’s 47 + Yuki’s 702 = 880.
+ • Total spotted puppies = Jamal’s 77 + Gabriel’s 13 + Yuki’s 702 = 792.
+
+5. Finally, compute the percentage of puppies that have spots:
+ • Percentage = (Total spotted puppies / Total puppies) × 100
+ • Percentage = (792 / 880) × 100 = 0.9 × 100 = 90%
+
+The answer is 90%.",90.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A farmer is buying feed for his pigs. He buys a variety of hay, corn, cucumbers and apples. Since apples are a rare treat, he only buys four 3-kg boxes of them for the whole stable. He only wants enough cucumbers to feed the pigs while the vegetables are fresh, so he buys twelve 6-kg bags. Hay are the main diet of his pigs, so he buys thirty four 39-kg packs. Corn are a staple to supplement the hay, so he buys twenty 17-kg sacks. Finally, he buys 43 kgs of groceries, and 27 kgs of tools, and 100 kgs of wood. A farm truck can carry 160 kgs at a time. If the farmer has three trucks, how many trips does the farmer need to transport all the purchased items?",4.0,,,0,"Let's think step by step.
+
+1. First, calculate the total weight of each type of item:
+ • Apples: 4 boxes × 3 kg = 4 × 3 = 12 kg.
+ • Cucumbers: 12 bags × 6 kg = 12 × 6 = 72 kg.
+ • Hay: 34 packs × 39 kg = 34 × 39 = 1326 kg.
+ • Corn: 20 sacks × 17 kg = 20 × 17 = 340 kg.
+ • Groceries: 43 kg.
+ • Tools: 27 kg.
+ • Wood: 100 kg.
+
+2. Now, add all the weights together:
+ Total weight = 12 + 72 + 1326 + 340 + 43 + 27 + 100  
+         = 84 (from apples and cucumbers) + 1326 + 340 + 43 + 27 + 100  
+         = 1410 + 340 + 43 + 27 + 100  
+         = 1750 + 43 + 27 + 100  
+         = 1793 + 27 + 100  
+         = 1820 + 100  
+         = 1920 kg.
+
+3. Each truck can carry 160 kg, and there are 3 trucks available.  
+ Thus, the total capacity per trip = 3 trucks × 160 kg = 480 kg.
+
+4. To find the number of trips, divide the total weight by the capacity per trip:
+ Number of trips = Total weight / Capacity per trip = 1920 / 480 = 4.
+
+The answer is 4.",4.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Uma saw a 40-foot shark with 18 remoras, each 16 inches long attached to it. Then, 1/6 of the remoras swam away. Later, Uma saw another 10-foot shark with 6 remoras, each 8 inches long, attached to it. On average, what percentage of each shark's body length is covered by the remoras?",45.0,,,0,"Let's think step by step.
+
+1. For the 40-foot shark:
+   - It originally had 18 remoras.
+   - 1/6 of 18 remoras swam away, which is 18 ÷ 6 = 3 remoras.
+   - So, the remaining number of remoras is 18 – 3 = 15.
+   - Each of these remoras is 16 inches long, so the total remora length is 15 × 16 = 240 inches.
+   - Convert the shark's length to inches: 40 feet × 12 inches/foot = 480 inches.
+   - The percentage of the shark’s body length covered by remoras is (240 ÷ 480) × 100 = 50%.
+
+2. For the 10-foot shark:
+   - It has 6 remoras.
+   - Each remora is 8 inches long, so the total remora length is 6 × 8 = 48 inches.
+   - Convert the shark's length to inches: 10 feet × 12 inches/foot = 120 inches.
+   - The percentage of the shark’s body length covered by remoras is (48 ÷ 120) × 100 = 40%.
+
+3. To find the average percentage for the two sharks, add the percentages and divide by 2:
+   - (50% + 40%) ÷ 2 = 90% ÷ 2 = 45%.
+
+The answer is 45%.",45.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Carlos places almonds on bowls and tables. Each bowl can hold 24 almonds while each table can hold three times that. Carlos has 720 almonds, 7 bowls and 3 tables. Unfortunately, 2 tables break. Carlos then eats one-fifth of all the almonds. How many more bowls does Carlos need so he can place all the remaining almonds?",14.0,,,0,"Let's think step by step.
+
+1. Each bowl holds 24 almonds. Each table holds three times that, so one table holds 3 × 24 = 72 almonds.
+
+2. Initially, Carlos has 7 bowls and 3 tables. However, 2 tables break, leaving him with only 1 working table.
+
+3. Before placing the almonds, Carlos has 720 almonds. Then he eats one‑fifth of them, so the number of almonds remaining is  
+  720 − (1/5 × 720) = 720 − 144 = 576 almonds.
+
+4. Now, the capacity of the remaining containers is:  
+ • Bowls: 7 bowls × 24 almonds/bowl = 168 almonds  
+ • Table: 1 table holds 72 almonds  
+ Total capacity = 168 + 72 = 240 almonds.
+
+5. Since 576 almonds need to be placed and the current capacity is only 240 almonds, Carlos needs extra bowls. If each additional bowl holds 24 almonds, let x be the number of extra bowls needed. Then we require:  
+  240 + 24x ≥ 576
+
+6. Solve for x:  
+  24x ≥ 576 − 240  
+  24x ≥ 336  
+  x ≥ 336 / 24  
+  x ≥ 14
+
+So, Carlos needs at least 14 more bowls to hold all the remaining almonds.
+
+The answer is 14.",14.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Diego is 19 years old. In 9 years, his cousin Aisha will be 2 times as old as Diego is now. Diego's brother, Esteban, is 6 years younger than Diego, and Aisha sister Nadia is 10 years older than Esteban. What will be the average of all four in 4 years?",25.0,,,0,"Let's think step by step.
+Diego is currently 19 years old.
+
+Step 1: Find Aisha's age.
+In 9 years, Aisha will be 2 times as old as Diego is now:
+  2 × 19 = 38
+So, Aisha's age in 9 years will be 38.
+Thus, her current age is:
+  38 - 9 = 29
+
+Step 2: Find Esteban's age.
+Esteban is 6 years younger than Diego:
+  19 - 6 = 13
+
+Step 3: Find Nadia's age.
+Nadia is 10 years older than Esteban:
+  13 + 10 = 23
+
+Step 4: Determine their ages in 4 years.
+Diego will be: 19 + 4 = 23  
+Aisha will be: 29 + 4 = 33  
+Esteban will be: 13 + 4 = 17  
+Nadia will be: 23 + 4 = 27
+
+Step 5: Find the average of their ages in 4 years.
+Total age = 23 + 33 + 17 + 27 = 100  
+Average = 100 / 4 = 25
+
+The answer is 25.",25.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Keisha is knitting winter wear for her 4 grandchildren. They're quadruplets, so they're all the same size. She wants to make a shawl, sweater, poncho, gloves, and mittens for each of them. It takes 5 skeins of wool to make a shawl, 6 for a sweater, 8 for a poncho, 8 for a pair of gloves, and 14 for a pair of mittens. Keisha wants to make two warm jackets for herself, each needing 8 skeins of wool. Each dozen skeins of wool costs $7. The store has a promotion where customers receive a $20 discount on purchases over $100. How much should Keisha pay for all the skeins of wool she needs?",85.0,,,0,"Let's think step by step.
+
+1. For each grandchild, Keisha is making:
+   - Shawl: 5 skeins  
+   - Sweater: 6 skeins  
+   - Poncho: 8 skeins  
+   - Gloves: 8 skeins  
+   - Mittens: 14 skeins  
+
+2. First, calculate the total skeins needed for one grandchild:  
+   5 + 6 + 8 + 8 + 14 = 41 skeins
+
+3. Since there are 4 grandchildren, for all of them she needs:  
+   41 skeins/child × 4 = 164 skeins
+
+4. Next, Keisha wants to make 2 jackets for herself, each needing 8 skeins. So for the jackets, she needs:  
+   2 × 8 = 16 skeins
+
+5. Now, add the skeins for the grandchildren and for herself:  
+   164 + 16 = 180 skeins
+
+6. The cost is given as $7 per dozen skeins. Since 1 dozen = 12 skeins, calculate how many dozens are in 180 skeins:  
+   180 ÷ 12 = 15 dozen
+
+7. At $7 per dozen, the total cost is:  
+   15 × $7 = $105
+
+8. The store promotion offers a $20 discount on purchases over $100. Since $105 is over $100, apply the discount:  
+   $105 - $20 = $85
+
+The answer is $85.",85.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,Mohammed goes to the store to buy some rice. The normal brand of rice he buys costs ¥15 per kg. He has to buy a more expensive brand that costs 20% more since his favorite brand was sold out. He decides to buy a week's worth of rice and he uses 3 kgs of rice per day. The store has a 40% discount on rice which applies only up to 10 kgs; any additional rice is sold at the regular price. Mohammed also decides to buy himself a bagel for ¥2. How much does Mohammed have to pay?,308.0,,,0,"Let's think step by step.
+
+1. Mohammed uses 3 kg of rice per day for a week, so he needs 3 kg/day × 7 days = 21 kg of rice.
+
+2. The normal rice costs ¥15 per kg. However, since his favorite brand was sold out, he buys a brand that costs 20% more. Therefore, the price per kg for the new rice is:
+   15 × 1.20 = ¥18 per kg.
+
+3. The store offers a 40% discount on rice for up to 10 kg. With a discount, the price per kg for the first 10 kg becomes:
+   18 × (1 - 0.40) = 18 × 0.60 = ¥10.80 per kg.
+
+4. For the remaining rice beyond 10 kg, the normal price of ¥18 per kg applies. The extra rice is:
+   21 kg - 10 kg = 11 kg.
+
+5. Now, calculate the cost of the rice:
+   - Cost for the first 10 kg = 10 kg × ¥10.80 = ¥108.
+   - Cost for the additional 11 kg = 11 kg × ¥18 = ¥198.
+   - Total rice cost = ¥108 + ¥198 = ¥306.
+
+6. Mohammed also buys a bagel for ¥2.
+
+7. Finally, the total cost is:
+   ¥306 (rice) + ¥2 (bagel) = ¥308.
+
+The answer is 308.",308.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Jasmine and Mia are sisters from Nairobi who love collecting signatures from authors. During their spring break from school, the sisters spend every afternoon collecting signatures. After 6 weeks, Jasmine and Mia compare their autograph books, counting up the number of signatures each sister has collected. Jasmine has 36 signatures in her book, and Mia has 31. The sisters have 2 more weeks of spring break, and they decide they want to reach 145 signatures between them by the end of the break. However, during the remaining 2 weeks, Jasmine is only able to collect signatures on weekends, reducing her weekly collection by 5 per week, while Mia decides to increase her weekly collection. How many signatures will Mia need to collect per week to make sure they reach their goal?",34.0,,,0,"Let's think step by step.
+
+1. First, determine the combined total of signatures already collected.  
+ • Jasmine has 36 signatures.  
+ • Mia has 31 signatures.  
+ • Thus, together they have 36 + 31 = 67 signatures.
+
+2. Next, find out how many more signatures they need to reach their goal of 145.  
+ • Required additional signatures = 145 – 67 = 78 signatures.
+
+3. There are 2 weeks remaining. However, Jasmine’s collection ability changes.  
+ • Over the first 6 weeks, Jasmine averaged 36 / 6 = 6 signatures per week.  
+ • Due to her collecting only on weekends during the last 2 weeks, her weekly total is reduced by 5, so she will now collect 6 – 5 = 1 signature per week.  
+ • Over the 2 remaining weeks, Jasmine will collect 1 × 2 = 2 signatures.
+
+4. Let Mia’s needed weekly collection for the remaining 2 weeks be x signatures per week. Then over 2 weeks, she will collect 2x signatures.
+
+5. Together during the last 2 weeks, they must collect a total of 78 signatures. Setting up the equation:  
+  Jasmine’s signatures + Mia’s signatures = 78  
+  2 + 2x = 78
+
+6. Now, solve for x.  
+ • Subtract 2 from both sides: 2x = 78 – 2 = 76  
+ • Divide both sides by 2: x = 76 / 2 = 38
+
+The answer is that Mia will need to collect 38 signatures per week to ensure they reach their goal of 145 signatures.",145.0,0
+p2,gsm-symbolic,o3-mini-2025-01-31,"Sofia and Benjamin have 246 minutes to walk to the mall together starting from their home. It takes them 16 minutes to get to the corner where the cinema is. It takes them another 52 minutes to get to the gym. When they reach the gym, they remember they forgot their wallets at home, so they have to return to pick up their wallets and then walk all the way back to the gym again. Once they reach the gym for the second time, how much longer do they have to get to the mall without being late?",42.0,,,0,"Let's think step by step.
+
+1. From their home to the gym, they first walk to the corner in 16 minutes and then to the gym in 52 minutes. So, the time to get to the gym the first time is 16 + 52 = 68 minutes.
+
+2. When they reach the gym, they realize they forgot their wallets, so they must go back home and then return to the gym. The walk from the gym back home takes the same 68 minutes, and then going from home to the gym again takes another 68 minutes. This adds up to 68 + 68 = 136 minutes.
+
+3. The total time spent up to reaching the gym for the second time is the sum of the initial leg and the wallet trip: 68 + 136 = 204 minutes.
+
+4. They have a total of 246 minutes. Therefore, the time remaining to get to the mall is 246 - 204 = 42 minutes.
+
+The answer is 42 minutes.",42.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Leon wants to make different sized ice cubes with 312 ounces of water. He can make giant cubes that use 12 ounces per cube, medium cubes that use 5 ounces, small cubes that use 1/2 of a ounce, and tiny cubes that are half the size of small cubes. He makes 48 total ice cubes, including 10 giant cubes, 14 small cubes, 12 medium cubes, and some tiny cubes. How many ounces of water does Leon have left?",122.0,,,0,"Let's think step by step.
+Leon starts with 312 ounces of water.
+He makes several types of ice cubes:
+1. Giant cubes: He makes 10 giant cubes, each using 12 ounces. So, the giant cubes use 10 × 12 = 120 ounces.
+2. Medium cubes: He makes 12 medium cubes, each using 5 ounces. So, the medium cubes use 12 × 5 = 60 ounces.
+3. Small cubes: He makes 14 small cubes, each using 1/2 ounce. So, the small cubes use 14 × (1/2) = 7 ounces.
+4. Tiny cubes: Since he makes a total of 48 cubes and already has 10 + 12 + 14 = 36 cubes, he makes 48 − 36 = 12 tiny cubes. Each tiny cube is half the size of a small cube, so each uses (1/2) × (1/2) = 1/4 ounce. Therefore, the tiny cubes use 12 × (1/4) = 3 ounces.
+Now, adding the water used for all cubes: 120 + 60 + 7 + 3 = 190 ounces.
+Finally, subtract the water used from the total water available: 312 − 190 = 122.
+The answer is 122.",122.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A class of 160 students has various hobbies. 69 like to hike, 8 like to play chess, 13 like to swim, 13 like to play football, and the rest like to either play video games or bake. What percentage of the students like to play video games if the number of the students that like to bake is 3 less than four times the number that prefer playing football?",5.0,,,0,"Let's think step by step.
+
+1. First, find the total number of students involved in the known hobbies:
+   - 69 students like to hike.
+   - 8 students like to play chess.
+   - 13 students like to swim.
+   - 13 students like to play football.
+   
+   So, the total for these hobbies is 69 + 8 + 13 + 13 = 103.
+
+2. Since the class has 160 students, the remaining students are those who like either video games or baking:
+   - Remaining students = 160 - 103 = 57.
+
+3. According to the problem, the number of students who like to bake is 3 less than four times the number who play football. Since 13 students play football:
+   - Students who bake = (4 × 13) - 3 = 52 - 3 = 49.
+
+4. The rest of the 57 students therefore like to play video games:
+   - Students who like video games = 57 - 49 = 8.
+
+5. To find the percentage of students who like to play video games:
+   - Percentage = (Number of video game lovers / Total students) × 100 = (8 / 160) × 100 = 5%.
+
+The answer is 5%.",5.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Oliver is raising money for a 2-day workshop. Each day costs ₣100 for hotel, ₣20 for food, and ₣10 for transportation. Oliver only has ₣85. His friends have chipped in and will cover the cost of all the food for the workshop. Oliver has also applied for help from the local charity, which has decided to cover 1/10 of the remaining cost of the workshop. How much money is Oliver still missing?",113.0,,,0,"Let's think step by step.
+
+1. First, calculate the total workshop cost for each day. Each day costs:
+  Hotel: ₣100  
+  Food: ₣20  
+  Transportation: ₣10  
+  Total per day = 100 + 20 + 10 = ₣130
+
+2. Since the workshop lasts for 2 days, the total cost is:
+  2 × ₣130 = ₣260
+
+3. Oliver's friends are covering the food cost for the workshop. The total food cost for 2 days is:
+  ₂ × ₣20 = ₣40  
+  So, subtract the food cost from the total: ₣260 - ₣40 = ₣220
+
+4. Next, the local charity contributes 1/10 of the remaining cost. That contribution is:
+  ₣220 × (1/10) = ₣22  
+  Subtract the charity's contribution: ₣220 - ₣22 = ₣198
+
+5. Oliver currently has ₣85. So, the amount he is still missing is:
+  ₣198 - ₣85 = ₣113
+
+The answer is 113.",113.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A loaf of bread at the bakery costs €5. The cost of a bagel is one-fourth of a loaf of bread. The bakery has a promotion that if one buys 7 bagels or more, they get a 20% discount on bagels. How much more do 4 loaves of bread cost than 8 bagels?",12.0,,,0,"Let's think step by step.
+
+1. A loaf of bread costs €5. Therefore, 4 loaves cost 4 × €5 = €20.
+
+2. The cost of a bagel is one-fourth the cost of a loaf of bread, so a bagel costs €5 ÷ 4 = €1.25.
+
+3. The bakery offers a 20% discount on bagels when buying 7 or more. Since 8 bagels are being purchased, the discount applies. The discounted cost per bagel is €1.25 × 0.8 = €1.00.
+
+4. Thus, 8 bagels cost 8 × €1.00 = €8.
+
+5. Finally, the difference between 4 loaves of bread and 8 bagels is €20 − €8 = €12.
+
+The answer is €12.",12.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Elena and Jamal went to a construction supply store. Jamal is a member, but Elena is not. Elena has $98.39 and wants to buy 15 anchors from a bin at the store. She also needs 9 nails, each costing $0.61. Each anchor costs $0.26. Additionally, Elena picks up 10 gallons of paint. Jamal starts with $80 and wants 10 gallons of paint, each priced at $7.0, and 3 carpenter pencils, each costing $2. The store offers a 10% discount on paint for members. How much more money does Elena have left than Jamal after they leave the store?",8.0,,,0,"Let's think step by step.
+
+Step 1: Calculate Elena's total spending.
+• Anchors: 15 anchors at $0.26 each = 15 × $0.26 = $3.90.
+• Nails: 9 nails at $0.61 each = 9 × $0.61 = $5.49.
+• Paint: Elena buys 10 gallons at the non-member price of $7.00 per gallon = 10 × $7.00 = $70.00.
+• Total for Elena = $3.90 + $5.49 + $70.00 = $79.39.
+
+Step 2: Determine Elena's remaining money.
+• Elena started with $98.39.
+• Money left for Elena = $98.39 - $79.39 = $19.00.
+
+Step 3: Calculate Jamal's total spending.
+• Paint: Jamal buys 10 gallons with a 10% member discount. The discounted price per gallon = $7.00 × 0.90 = $6.30. So, 10 gallons cost 10 × $6.30 = $63.00.
+• Carpenter pencils: 3 pencils at $2 each = 3 × $2 = $6.00.
+• Total for Jamal = $63.00 + $6.00 = $69.00.
+
+Step 4: Determine Jamal's remaining money.
+• Jamal started with $80.00.
+• Money left for Jamal = $80.00 - $69.00 = $11.00.
+
+Step 5: Find how much more money Elena has left than Jamal.
+• Difference = $19.00 (Elena) - $11.00 (Jamal) = $8.00.
+
+The answer is 8.",8.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A giant cake has 120 pieces. Arash can eat 5 pieces a day while Ava can eat twice as much and DeShawn can eat two times as much as Ava. After 2 days, DeShawn decides to go on a diet and cut the consumption by half. How many days will it take for the cake to be fully eaten?",4.0,,,0,"Let's think step by step.
+
+1. Arash eats 5 pieces a day.
+
+2. Ava eats twice as much as Arash, so she eats 2 × 5 = 10 pieces per day.
+
+3. DeShawn eats two times as much as Ava, so he eats 2 × 10 = 20 pieces per day.
+
+4. For the first 2 days, the three together eat:
+   5 (Arash) + 10 (Ava) + 20 (DeShawn) = 35 pieces per day.
+   In 2 days, they eat 35 × 2 = 70 pieces.
+
+5. After 2 days, there are 120 - 70 = 50 pieces remaining.
+
+6. After 2 days, DeShawn cuts his consumption by half. His new rate becomes 20 / 2 = 10 pieces per day.
+   The new daily consumption is:
+   Arash: 5 pieces + Ava: 10 pieces + DeShawn: 10 pieces = 25 pieces per day.
+
+7. To finish the remaining 50 pieces at the new rate, it takes:
+   50 pieces ÷ 25 pieces per day = 2 days.
+
+8. Therefore, the total number of days required is the first 2 days plus the subsequent 2 days, which equals 2 + 2 = 4 days.
+
+The answer is 4.",4.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"When Gabrielle watches her nephew, she gets out a variety of toys for him. The bag of building blocks has 43 blocks in it. The bin of stuffed animals has 5 stuffed animals inside. The number of action figures in the action figure pack is twice the number of blocks and stuffed animals combined. The crayon box has 12 different colors of crayon, and the sticker book has 6 pages, each with 12 stickers. The tower of stacking rings has 29 multicolored rings on it. Gabrielle recently bought a tube of bouncy balls, bringing her total number of items for her nephew up to 320. How many bouncy balls came in the tube?",63.0,,,0,"Let's think step by step.
+
+1. The bag of building blocks has 43 blocks.
+2. The bin of stuffed animals has 5 stuffed animals.
+3. The number of action figures is twice the combined number of blocks and stuffed animals. So, action figures = 2 × (43 + 5) = 2 × 48 = 96.
+4. The crayon box has 12 crayons.
+5. The sticker book has 6 pages with 12 stickers on each page. So, stickers = 6 × 12 = 72.
+6. The tower of stacking rings has 29 rings.
+7. First, find the total number of items before adding the bouncy balls:
+  43 (blocks) + 5 (stuffed animals) + 96 (action figures) + 12 (crayons) + 72 (stickers) + 29 (rings) = 257.
+8. Gabrielle’s total number of items is 320, so the number of bouncy balls is:
+  320 − 257 = 63.
+
+The answer is 63.",63.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A care facility has a capacity of 1900 rooms with 1/4 occupied and one-fourth of all the rooms being out of service. Due to the pandemic, 20 patients are admitted into the care facility each day. Calculate the total number of unoccupied rooms in the care facility after 3 weeks.",530.0,,,0,"Let's think step by step.
+
+1. The total number of rooms is 1900.
+
+2. One-fourth of the rooms are occupied initially, so the number of occupied rooms is 1900 × 1/4 = 475.
+
+3. One-fourth of the rooms are out of service, which is 1900 × 1/4 = 475.
+
+4. Since the facility has 1900 rooms in total and 475 of them are out of service, the number of rooms in service (available for occupancy) is 1900 – 475 = 1425.
+
+5. Out of these 1425 operating rooms, 475 are already occupied. Therefore, the initially unoccupied operating rooms are 1425 – 475 = 950.
+
+6. Over 3 weeks (which is 21 days), 20 patients are admitted each day. Thus, the total number of new patients admitted is 20 × 21 = 420. These new patients will occupy 420 of the 950 unoccupied operating rooms.
+
+7. After these admissions, the remaining unoccupied operating rooms are 950 – 420 = 530.
+
+8. However, the 475 out-of-service rooms remain unoccupied as well. To get the total number of unoccupied rooms in the facility, we add the unoccupied operating rooms and the out-of-service rooms: 530 + 475 = 1005.
+
+The answer is 1005.",1005.0,0
+p2,gsm-symbolic,o3-mini-2025-01-31,"Faisal is selling muffins and apricot pies for a fundraiser. On Wednesday, he sold 27 boxes of muffin and 13 fewer boxes of apricot pie, than on Thursday. On Thursday, he sold 11 more boxes of muffins than on Wednesday and 21 boxes of apricot pie. On Friday, he sold as much as he did in the past two days combined. If the muffin cost ₺9 and the apricot pie cost ₺21, what was Faisal's average daily earning?",796.0,,,0,"Let's think step by step.
+
+1. On Wednesday, Faisal sold 27 boxes of muffins. His apricot pie boxes on Wednesday were 13 fewer than on Thursday. Since on Thursday he sold 21 boxes of apricot pie, he sold 21 – 13 = 8 boxes of apricot pie on Wednesday.
+
+2. On Thursday, he sold 11 more boxes of muffins than on Wednesday. That is, he sold 27 + 11 = 38 boxes of muffins. (And as given, he sold 21 boxes of apricot pie on Thursday.)
+
+3. The total boxes sold on Wednesday were 27 (muffins) + 8 (apricot pies) = 35 boxes and on Thursday were 38 (muffins) + 21 (apricot pies) = 59 boxes.
+
+4. On Friday, he sold as much as he did in the past two days combined. This means for Friday he sold as many muffins as the sum of Wednesday’s and Thursday’s muffins and as many apricot pies as the sum of Wednesday’s and Thursday’s apricot pies. Thus:
+  – Muffins on Friday = 27 + 38 = 65 boxes.
+  – Apricot pies on Friday = 8 + 21 = 29 boxes.
+
+5. Now, with the costs given (each muffin costs ₺9 and each apricot pie costs ₺21), we can calculate his earnings per day.
+
+  • Wednesday’s earnings:
+    Muffin earnings = 27 × ₺9 = ₺243.
+    Apricot pie earnings = 8 × ₺21 = ₺168.
+    Total = ₺243 + ₺168 = ₺411.
+
+  • Thursday’s earnings:
+    Muffin earnings = 38 × ₺9 = ₺342.
+    Apricot pie earnings = 21 × ₺21 = ₺441.
+    Total = ₺342 + ₺441 = ₺783.
+
+  • Friday’s earnings:
+    Muffin earnings = 65 × ₺9 = ₺585.
+    Apricot pie earnings = 29 × ₺21 = ₺609.
+    Total = ₺585 + ₺609 = ₺1,194.
+
+6. The total earnings for the three days are:
+  ₺411 (Wednesday) + ₺783 (Thursday) + ₺1,194 (Friday) = ₺2,388.
+
+7. Finally, the average daily earning is given by dividing the total earnings by 3:
+  Average = ₺2,388 ÷ 3 = ₺796.
+
+The answer is ₺796.",796.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"In Mrs. Garcia's class of 120 students, 50% of the class are swimmers. Out of the remaining class, 45% of the students are choir members or part of dancers. These 3 groups of students will need to leave early today to travel to an away tournament. Half of the swimmers are absent for being sick. Also, 3 cheerleaders will accompany each of these groups. How many students are leaving early to the tournament?",66.0,,,0,"Let's think step by step.
+
+1. Mrs. Garcia's class has 120 students.  
+• 50% are swimmers, so the number of swimmers is 0.50 × 120 = 60.
+
+2. The remaining students are non-swimmers.  
+• Total non-swimmers = 120 − 60 = 60.
+
+3. Out of the non-swimmers, 45% are choir members or dancers.  
+• Choir/dancers = 0.45 × 60 = 27.
+
+4. However, half of the swimmers are absent because they are sick, so only half of the swimmers are leaving early.  
+• Present swimmers leaving early = 60 / 2 = 30.
+
+5. Now, there are two groups of students leaving early:  
+• The present swimmers group (30 students)  
+• The choir/dancers group (27 students)
+
+6. In addition, 3 cheerleaders will accompany each of these groups. Since there are 3 groups in total (swimmers, choir/dancers, and cheerleaders as a group by themselves), we interpret it as follows:  
+• For each of the 2 student groups (swimmers and choir/dancers), they will get 3 cheerleaders accompanying them. That means extra cheerleaders = 2 × 3 = 6.  
+  OR  
+• The wording “these 3 groups” may be interpreted as: the swimmers group, the choir/dancers group, and the cheerleaders group (who are additional to these groups) are all leaving early, and each group is accompanied by 3 cheerleaders. This would mean extra cheerleaders = 3 × 3 = 9.
+
+There is a need to clarify the interpretation. The phrase “3 groups of students will need to leave early” indicates:  
+ Group 1: Swimmers (adjusted for absences) = 30 students  
+ Group 2: Choir/dancers = 27 students  
+ Group 3: Cheerleaders, where 3 cheerleaders accompany each of these groups.
+
+Since it says “3 cheerleaders will accompany each of these groups,” we add 3 cheerleaders for every one of the 3 groups.  
+• Total cheerleaders = 3 groups × 3 cheerleaders per group = 9.
+
+7. Now, add up all the students leaving early:  
+• Present swimmers: 30  
+• Choir/dancers: 27  
+• Cheerleaders: 9
+
+Total = 30 + 27 + 9 = 66
+
+The answer is 66.",66.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Olga has a flower bed that is 132 meters long. Olga wants to fill her flower bed with plants. Olga's flowers grow 3meters wide so she needs to leave 12 meters between every plant (including the plants width). Olga already owns 7 flowers. Each flowering plant costs ₣9 at the store. However, if she buys more than 2 plants, she'll receive a ₣5 discount on the entire purchase. How much money will Olga spend at the store to fill up her flower bed?",31.0,,,0,"Let's think step by step.
+
+1. First, since each plant (including its own width) takes up 12 meters of space, the flower bed that is 132 meters long can accommodate a total of 132 ÷ 12 = 11 plants.
+
+2. Olga already owns 7 flowering plants. To fill the flower bed completely, she needs 11 − 7 = 4 more plants.
+
+3. At the store, each plant costs ₣9. So the cost for 4 plants without any discount would be 4 × ₣9 = ₣36.
+
+4. Because she is buying more than 2 plants, Olga receives a ₣5 discount on the entire purchase. Therefore, the final cost is ₣36 − ₣5 = ₣31.
+
+The answer is ₣31.",31.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,Olga can peel 6 clams a minute and saute 30 clams in 19 minutes. How many minutes will it take her to peel and saute 150 clams if it takes 12 seconds to wash each clam before peeling it? Note that Olga can't work in parallel and needs to take a 13-minute break after peeling the clams before she can start sautéing them.,163.0,,,0,"Let's think step by step.
+
+1. First, Olga washes the clams. It takes 12 seconds to wash one clam, so for 150 clams she needs:
+  150 clams × 12 seconds per clam = 1800 seconds.
+  Convert this into minutes: 1800 seconds ÷ 60 = 30 minutes.
+
+2. Next, she peels the clams. She can peel 6 clams per minute, so the time to peel 150 clams is:
+  150 clams ÷ 6 clams per minute = 25 minutes.
+
+3. After peeling, she must take a break of 13 minutes.
+
+4. Finally, Olga sautés the clams. Since she sautés 30 clams in 19 minutes, for 150 clams the time required is:
+  (150 clams ÷ 30 clams) × 19 minutes = 5 × 19 minutes = 95 minutes.
+
+5. Now, add up all the time intervals:
+  Washing: 30 minutes
+  Peeling: 25 minutes
+  Break: 13 minutes
+  Sautéing: 95 minutes
+  Total time = 30 + 25 + 13 + 95 = 163 minutes.
+
+The answer is 163 minutes.",163.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Andre picks 177 pineapples on Saturday. Then he picks 183 pineapples on Sunday. On Monday, he picks double the number of pineapples he did on Saturday. On Tuesday, he picks half the amount of what he picked in the past 3 days combined. On Wednesday, Andre is going to sell pineapples in boxes of 21 pineapples each. He is going to sell each box for $8. How much is Andre going to make?",408.0,,,0,"Let's think step by step.
+1. On Saturday, Andre picks 177 pineapples.
+2. On Sunday, he picks 183 pineapples.
+3. On Monday, he picks double the number he picked on Saturday:
+  2 × 177 = 354 pineapples.
+4. First 3 days total = 177 + 183 + 354 = 714 pineapples.
+5. On Tuesday, he picks half of the total from the first 3 days:
+  714 / 2 = 357 pineapples.
+6. Total pineapples collected = 177 + 183 + 354 + 357 = 1071 pineapples.
+7. On Wednesday, Andre sells the pineapples in boxes of 21. The number of boxes = 1071 / 21 = 51 boxes.
+8. Each box is sold for $8, so his total revenue is:
+  51 × $8 = $408.
+The answer is $408.",408.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"In a 100-item quiz, 40% of the questions are chemistry, 20% are geography, and the rest are equally divided as history and algebra questions. If Aisha is sure to get 25% of the geography questions, 100% of the chemistry questions, and a tenth of the history and algebra questions correctly, how many points is she sure to get?",49.0,,,0,"Let's think step by step.
+
+There are 100 questions in total.  
+40% of 100 are chemistry questions, so there are 40 chemistry questions.  
+20% of 100 are geography questions, so there are 20 geography questions.  
+
+The remaining questions are 100 - (40 + 20) = 40.  
+These remaining 40 questions are equally divided between history and algebra, so there are 20 history questions and 20 algebra questions.  
+
+Aisha is sure to get:  
+• 100% of the chemistry questions correct → 40 correct answers.  
+• 25% of the geography questions correct → 25% of 20 = 5 correct answers.  
+• 10% of the history questions correct → 10% of 20 = 2 correct answers.  
+• 10% of the algebra questions correct → 10% of 20 = 2 correct answers.  
+
+Adding these up: 40 + 5 + 2 + 2 = 49.  
+
+The answer is 49.",49.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"An uncle eats 10 pizzas per day, his spouse eats 20 pizzas per day, and their grandchild eats two-fourths of the combined number of pizzas they eat per day. After one month, the family decides to go on a diet in the second month, reducing their food consumption by 60% for the first half of the month, and then by an additional 50% for the second half. How many pizzas does this family eat in two months?",1755.0,,,0,"Let's think step by step.
+
+1. First, we determine the family’s daily pizza consumption on a normal day:  
+ • The uncle eats 10 pizzas.  
+ • His spouse eats 20 pizzas.  
+ • Together they eat 10 + 20 = 30 pizzas.  
+ • The grandchild eats two‐fourths (which is 1/2) of that amount, so he eats 30 × 1/2 = 15 pizzas.  
+ • Therefore, the total daily consumption is 10 + 20 + 15 = 45 pizzas.
+
+2. For the first month (with no dietary restrictions), assume the month has 30 days:  
+ • Daily consumption = 45 pizzas.  
+ • Total pizzas in the first month = 45 × 30 = 1350 pizzas.
+
+3. In the second month, the family goes on a diet with two phases:  
+ • For the first half of the month (15 days), their consumption is reduced by 60%.  
+  – This means they eat only 40% of the normal amount.  
+  – Daily consumption becomes 45 × 0.40 = 18 pizzas.  
+  – Total for this period = 18 × 15 = 270 pizzas.  
+ • For the second half of the month (15 days), the consumption is reduced by an additional 50%.  
+  – This reduction applies to the already reduced amount (18 pizzas), so they now eat 50% of 18 pizzas: 18 × 0.50 = 9 pizzas per day.  
+  – Total for this period = 9 × 15 = 135 pizzas.  
+ • Total pizzas in the second month = 270 + 135 = 405 pizzas.
+
+4. Finally, we combine the totals from both months:  
+ • First month = 1350 pizzas  
+ • Second month = 405 pizzas  
+ • Overall total = 1350 + 405 = 1755 pizzas.
+
+The answer is 1755.",1755.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Sunnyside High is holding graduation in its Sports Arena this year which has space for 9600 people. After accounting for the 700 seats for graduate, 450 seats for the faculty attending, and reserving 50 seats for the event's staff, how many tickets would each graduate receive to give to their friends and family if the tickets are split equally?",12.0,,,0,"Let's think step by step.
+
+1. The Sports Arena has a total seating capacity of 9600 people.
+2. Seats reserved for the event are:
+   - 700 for graduates,
+   - 450 for the faculty,
+   - 50 for the event's staff.
+3. Adding these reserved seats gives: 700 + 450 + 50 = 1200 seats.
+4. The remaining seats that can be distributed as tickets are: 9600 - 1200 = 8400.
+5. Since the 8400 tickets are split equally among the 700 graduates, each graduate receives: 8400 / 700 = 12 tickets.
+
+The answer is 12.",12.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Mohammed receives 30 emails a day. 20% of those emails don't require any response. From the rest, Mohammed can only respond to 2 less than the 1/2 of them. How many emails does Mohammed respond to in a 6 day work week? Mohammed work overtime on the last day so he can respond to 10% more emails than usual.",61.0,,,0,"Let's think step by step.
+
+1. Mohammed receives 30 emails each day.
+2. 20% of these emails don't require a response, which means 0.20 × 30 = 6 emails.
+3. So, the emails that potentially require a response each day are 30 − 6 = 24 emails.
+4. From these 24 emails, Mohammed can respond to 2 less than half of them. Half of 24 is 12, and 2 less than that is 12 − 2 = 10 emails.
+5. Therefore, on a regular day, he responds to 10 emails.
+6. In a 6-day work week, on the first 5 days he responds to 10 emails per day, giving a total of 5 × 10 = 50 emails.
+7. On the 6th day, he works overtime and can respond to 10% more emails than usual. 10% of 10 is 1, so on the overtime day he responds to 10 + 1 = 11 emails.
+8. Adding these together: 50 (regular days) + 11 (overtime day) = 61 emails.
+
+The answer is 61.",61.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Ananya walks 24 miles every day on her favorite walking trail, which includes 10 miles of walking on the beach and 14 miles of walking on the sidewalk. On the sidewalk, Ananya walks at two times the rate of speed that she does on the beach. However, due to a recent injury, Ananya's speed has decreased by half both on the beach and sidewalk. If 50 minutes of her walk is spent on the beach, how long does it take for her to complete the entire 24-mile walk, in minutes?",85.0,,,0,"Let's think step by step.
+
+1. Let v be Ananya’s original speed on the beach (in miles per minute). Then her original sidewalk speed is 2v because she walks at twice the beach speed.
+
+2. Due to her injury, her speeds are reduced by half. So her effective beach speed becomes (v/2) and her effective sidewalk speed becomes (2v/2) = v.
+
+3. We are told that Ananya spends 50 minutes on the beach. The beach distance is 10 miles. Therefore, using the formula Time = Distance/Speed for the beach, we have:
+  50 = 10 / (v/2)
+  50 = 10 * (2/v)
+  50 = 20 / v
+
+4. Solving for v:
+  v = 20/50 = 0.4 miles per minute
+
+5. Now, using her effective sidewalk speed (which is v = 0.4 miles per minute) for the 14-mile sidewalk portion, we find the time spent on the sidewalk:
+  Time_sidewalk = 14 ÷ 0.4 = 35 minutes
+
+6. Finally, the total time for the entire 24-mile walk (10 miles on beach and 14 miles on sidewalk) is:
+  Total time = 50 minutes (beach) + 35 minutes (sidewalk) = 85 minutes
+
+The answer is 85.",85.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Amelia initially had 11 dozen cookies, then ate 5 cookies for breakfast, and then hid the rest in the yard for the Easter egg hunt. Elena finds 5 cookies. Mei finds twice as many as Elena. Xavier finds 2 less than Mei. Mohammed finds an eighth as many as Xavier, and Umar finds two dozen cookies more than Mei and Elena combined. How many cookies are still hidden in the yard?",64.0,,,0,"Let's think step by step.
+
+1. Amelia initially had 11 dozen cookies. Since one dozen is 12 cookies, she had 11 × 12 = 132 cookies.
+2. She ate 5 cookies for breakfast, so the remaining cookies are 132 - 5 = 127.
+3. Amelia hid the remaining 127 cookies in the yard.
+4. Now, let's determine how many cookies each person finds:
+   • Elena finds 5 cookies.
+   • Mei finds twice as many as Elena, which is 2 × 5 = 10 cookies.
+   • Xavier finds 2 less than Mei, so he finds 10 - 2 = 8 cookies.
+   • Mohammed finds an eighth as many as Xavier, so he finds 8 ÷ 8 = 1 cookie.
+   • Umar finds two dozen cookies more than the combined cookies of Mei and Elena. Together, Mei and Elena have 10 + 5 = 15 cookies, and two dozen is 24, so Umar finds 15 + 24 = 39 cookies.
+5. The total number of cookies found is 5 + 10 + 8 + 1 + 39 = 63 cookies.
+6. The number of cookies still hidden in the yard is the total hidden (127) minus the cookies found (63), which gives 127 - 63 = 64.
+
+The answer is 64.",64.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Oscar collects garbage from 3 different apartment complexes. The first 2 have 100 apartments each and the last one is 35% bigger than the other 2 combined. However, this week, 9 apartments from each of the first 2 complexes were vacant and did not require collection service. Oscar collects garbage 5 times a week from each place and he gets paid ₣0.5 per collection for each apartment. He also earns an additional 10% in tips. How much money does he make in a week?",1243.0,,,0,"Let's think step by step.
+
+1. First, determine the number of apartments where Oscar actually collects garbage:
+ • In Complex 1: It has 100 apartments but 9 are vacant, so collections are made in 100 – 9 = 91 apartments.
+ • In Complex 2: Similarly, 100 – 9 = 91 apartments.
+ • For Complex 3: It is 35% bigger than the other two combined. The other complexes have 100 + 100 = 200 apartments in total, so Complex 3 has 200 × 1.35 = 270 apartments (with no vacancies mentioned).
+
+2. Next, calculate the number of collections per week:
+ • Oscar collects garbage 5 times a week per apartment.
+ • For Complex 1: 91 apartments × 5 = 455 collections.
+ • For Complex 2: 91 apartments × 5 = 455 collections.
+ • For Complex 3: 270 apartments × 5 = 1350 collections.
+ • Total collections = 455 + 455 + 1350 = 2260 collections.
+
+3. Now, compute his earnings before tips:
+ • He gets paid ₣0.5 per collection.
+ • Base earnings = 2260 collections × ₣0.5 = ₣1130.
+
+4. Finally, include the additional 10% in tips:
+ • Tips = 10% of ₣1130 = 0.10 × ₣1130 = ₣113.
+ • Total weekly earnings = Base earnings + Tips = ₣1130 + ₣113 = ₣1243.
+
+The answer is ₣1243.",1243.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"To make a call from a phone booth, you must pay ₺0.8 for each minute of your call. After 10 minutes, the price drops to ₺0.7 per minute. After 40 minutes from the start of the call, the price drops even more to ₺0.1 per two minutes. If your total bill is more than ₺25, you get a 20% discount on your total bill. How much would a 60-minute call cost?",24.0,,,0,"Let's think step by step.
+
+1. For the first 10 minutes, the cost is ₺0.8 per minute:
+  10 minutes × ₺0.8/min = ₺8.0.
+
+2. For the next 30 minutes (from minute 10 to minute 40), the cost is ₺0.7 per minute:
+  30 minutes × ₺0.7/min = ₺21.0.
+
+3. For the last 20 minutes (from minute 40 to minute 60), the cost is ₺0.1 for every two minutes. This is equivalent to ₺0.05 per minute:
+  20 minutes × ₺0.05/min = ₺1.0.
+
+4. Now, add up the charges for all segments:
+  ₺8.0 + ₺21.0 + ₺1.0 = ₺30.0.
+
+5. Since the total bill is more than ₺25, you get a 20% discount. To calculate the discount:
+  Discount amount = 20% of ₺30.0 = 0.20 × ₺30.0 = ₺6.0.
+
+6. Subtract the discount from the total bill:
+  Final cost = ₺30.0 - ₺6.0 = ₺24.0.
+
+The answer is ₺24.",24.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A janitor has to clean a building with 200 rooms. They have 10 days to get it done. It takes them 6 minutes per room. However, due to a recent injury, the janitor has become slower and it will take them twice as long to clean a room these days. If they work for 8 hours a day, what percentage of their day, on average, is spent cleaning rooms?",50.0,,,0,"Let's think step by step.
+1. Initially, cleaning a room takes 6 minutes, but due to the injury, it now takes twice as long. So, each room takes 6 × 2 = 12 minutes to clean.
+2. The janitor needs to clean 200 rooms. Therefore, the total cleaning time is 200 × 12 = 2400 minutes.
+3. The janitor works for 10 days, with each day having 8 hours of work. Converting hours to minutes gives 8 × 60 = 480 minutes per day.
+4. Over 10 days, the total working time is 10 × 480 = 4800 minutes.
+5. To find the average percentage of each day spent cleaning, first find the daily cleaning time: 2400 minutes / 10 days = 240 minutes per day.
+6. Now, calculate the percentage of an 8-hour workday that is spent cleaning by dividing the cleaning time by the total work time each day: (240 / 480) × 100 = 50%.
+
+The answer is 50%.",50.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Noah is popping popcorn for a snack. As the skillet of kernels heats up, the kernels start popping faster. 70 pop in the first 10 seconds of cooking, then 2 times that amount in the next 10 seconds. The kernels increase to 4 times the initial popping rate in the next 10 seconds. In the final 10 seconds, the popping slows down to half the rate as the past 10 seconds. After Noah takes the skillet off the heat, a quarter of the number of kernels that popped in the final 10 seconds of cooking also pop from the residual heat. Noah gives one-fifth of the made popcorn to his brother Luca. How many more pieces of popcorn does Noah have to eat than his brother?",399.0,,,0,"Let's think step by step.
+
+1. In the first 10 seconds, 70 kernels pop.
+2. In the next 10 seconds, 2 times the initial amount pop: 2 × 70 = 140 kernels.
+3. In the following 10 seconds, 4 times the initial amount pop: 4 × 70 = 280 kernels.
+4. In the final 10 seconds, the popping slows down to half the rate of the previous 10 seconds: 280 ÷ 2 = 140 kernels.
+5. After taking the skillet off the heat, a quarter of the kernels that popped in the final 10 seconds pop from residual heat: ¼ × 140 = 35 kernels.
+6. So, the total popcorn pieces are:
+  70 + 140 + 280 + 140 + 35 = 665 pieces.
+7. Noah gives one-fifth of the total popcorn to his brother Luca: 1/5 × 665 = 133 pieces.
+8. That means Noah keeps 665 − 133 = 532 pieces.
+9. The difference between the number of pieces Noah has and Luca has is 532 − 133 = 399.
+
+The answer is 399.",399.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"A building is made out of 5 white bricks, twice as many orange bricks, and an unknown number of green bricks. If there are 30 bricks in the building in total, what percentage of bricks are green?",50.0,,,0,"Let's think step by step.
+1. The building contains 5 white bricks.
+2. It also has twice as many orange bricks as white bricks, so there are 5 * 2 = 10 orange bricks.
+3. Together, the white and orange bricks add up to 5 + 10 = 15 bricks.
+4. Since the total number of bricks in the building is 30, the number of green bricks must be 30 - 15 = 15.
+5. To find the percentage of green bricks, we calculate (15 green bricks / 30 total bricks) * 100 = 50%.
+The answer is 50%.",50.0,1
+p2,gsm-symbolic,o3-mini-2025-01-31,"Olivia, Bodhi are currently 24 years apart in age. Olivia and Keisha are currently 15 years apart. Olivia, who is younger than Bodhi but older than Keisha, will be 42 in 7 years. How much younger is Keisha than the average age of all three?",18.0,,,0,"Let's think step by step.
+Olivia will be 42 in 7 years, so currently she is 42 - 7 = 35 years old.
+Bodhi is 24 years older than Olivia, so Bodhi is 35 + 24 = 59 years old.
+Keisha is 15 years younger than Olivia, so Keisha is 35 - 15 = 20 years old.
+The average age of the three is (59 + 35 + 20) / 3 = 114 / 3 = 38.
+The difference between the average age and Keisha’s age is 38 - 20 = 18.
+The answer is 18.",18.0,1
