@@ -107,6 +107,71 @@ def calculate_costs(results_dir="results/multilayer_auto_prompt_self_reflection"
         summary.to_excel("model_costs_summary.xlsx", index=False)
         return summary
 
+def calculate_reasoning_model_costs(results_dir="results/multilayer_auto_prompt_self_reflection", pricing_file="model_pricing.json"):
+    """Calculate costs for reasoning model experiments (CoT only)"""
+    # Load pricing data
+    with open(pricing_file) as f:
+        pricing = json.load(f)
+    
+    cost_data = []
+    for csv_path in Path(results_dir).rglob("run-*/o3-mini-measured/*.csv"):
+        df = pd.read_csv(csv_path)
+        
+        # Extract metadata from path
+        path_parts = csv_path.parts
+        run_number = [p for p in path_parts if p.startswith('run-')][0].split('-')[-1]
+        model = path_parts[-2]  # Get model from parent folder
+        
+        # Extract dataset and GSM type from filename
+        filename_parts = csv_path.stem.split("_")
+        dataset = filename_parts[1]
+        gsm_type = filename_parts[2]
+
+        # Process each row
+        for _, row in df.iterrows():
+            model_pricing = pricing.get(model, {})
+            input_cost = model_pricing.get('input_token_cost', 0)
+            output_cost = model_pricing.get('output_token_cost', 0)
+
+            # CoT costs only
+            cot_input = count_tokens(generate_cot_prompt(row['question']), model)
+            cot_output = count_tokens(row['cot_full_response'], model)
+            
+            total_cost = (cot_input * input_cost) + (cot_output * output_cost)
+            
+            cost_data.append({
+                "run": run_number,
+                "model": model,
+                "dataset": dataset,
+                "gsm_type": gsm_type,
+                "cot_input": cot_input,
+                "cot_output": cot_output,
+                "total_cost": total_cost
+            })
+
+    # Aggregate and calculate means
+    if cost_data:
+        cost_df = pd.DataFrame(cost_data)
+        
+        # Aggregate per run
+        run_totals = cost_df.groupby(['run', 'model', 'dataset', 'gsm_type']).agg({
+            'cot_input': 'sum',
+            'cot_output': 'sum',
+            'total_cost': 'sum'
+        }).reset_index()
+
+        # Calculate means across runs
+        summary = run_totals.groupby(['model', 'dataset', 'gsm_type']).agg({
+            'cot_input': 'mean',
+            'cot_output': 'mean',
+            'total_cost': 'mean'
+        }).reset_index()
+
+        # Save results
+        summary.to_excel("reasoning_model_costs_summary.xlsx", index=False)
+        return summary
+    return pd.DataFrame()
+
 # Add these helper functions
 def generate_cot_prompt(question):
     return f"""{EIGHT_SHOT_EXAMPLES}
@@ -131,4 +196,6 @@ Provide your corrected reasoning and answer in the examples format.
 EIGHT_SHOT_EXAMPLES = """[COPY THE EXACT CONTENT FROM run_test.py HERE]"""
 
 if __name__ == "__main__":
-    calculate_costs() 
+    # Run both calculations
+    main_summary = calculate_costs()
+    reasoning_summary = calculate_reasoning_model_costs() 
