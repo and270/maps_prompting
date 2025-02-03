@@ -29,9 +29,9 @@
     "run_analysis": true,
 
     "test_types": {
-        "run_base": false,
+        "run_base": true,
         "run_cot": true,
-        "run_traditional_self_reflection": false,
-        "run_multi_layer_self_reflection": false
+        "run_traditional_self_reflection": true,
+        "run_multi_layer_self_reflection": true
     }
 }
