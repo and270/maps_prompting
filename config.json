@@ -2,16 +2,32 @@
     "datasets": ["main", "p1", "p2"],
     "gsm_types": ["gsm-symbolic", "gsm8-std"],
     "models": {
-        "o3-mini": {
-            "name": "o3-mini-2025-01-31",
+        "gpt-4o":{
+            "name": "gpt-4o-2024-11-20",
             "provider": "openai",
-            "supports_sampling_params": false
+            "supports_sampling_params": true
+        },
+        "gpt-4o-mini":{
+            "name": "gpt-4o-mini-2024-07-18",
+            "provider": "openai",
+            "supports_sampling_params": true
+        },
+        "llama-3.1-70b-instruct":{
+            "name": "meta-llama/llama-3.1-70b-instruct",
+            "provider": "openrouter",
+            "supports_sampling_params": true
+        },
+        "llama-3.1-8b-instruct":{
+            "name": "meta-llama/llama-3.1-8b-instruct",
+            "provider": "openrouter",
+            "supports_sampling_params": true
         }
     },
     "max_reflection_layers": 3,
     "auto_prompt_model": "same",
     "run_test": true,
     "run_analysis": true,
+
     "test_types": {
         "run_base": false,
         "run_cot": true,

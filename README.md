@@ -29,7 +29,7 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 ## Features
 
 - **Automated Reflection Layers**: Iteratively prompt the model to produce refined solutions after detecting errors.
-- **Auto-Prompt (Meta-Prompt) Generation**: The model adapts its reflection prompt based on the problem’s structure and its prior errors, rather than relying on a single, static reflection template.
+- **Auto-Prompt (Meta-Prompt) Generation**: The model adapts its reflection prompt based on the problem's structure and its prior errors, rather than relying on a single, static reflection template.
 - **Multiple LLM Support**: Easily switch between different models (GPT-4o-mini, Llama 3.1–8B, Llama 3.1–70B, etc.) by updating the config.
 - **Benchmark Integration**: Out-of-the-box usage for GSM8K and GSM-Symbolic (main, p1, p2) datasets.
 
@@ -58,39 +58,51 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 
    > Note: This repository uses the `datasets` library, `openai` for API calls, `pandas` for data manipulation, etc.
 
-4. **Obtain your OpenRouter API key** (or another valid LLM provider key). You’ll need this key to authenticate model calls.
+4. **Obtain your OpenRouter API key** (or another valid LLM provider key). You'll need this key to authenticate model calls.
 
 ---
 
 ## Setup
 
 1. **.env file**  
-   Create a file named `.env` in the root directory and set your OpenRouter API key:
+   Create a file named `.env` in the root directory with API keys:
    ```bash
    OPENROUTER_API_KEY=your_key_here
+   OPENAI_API_KEY=your_openai_key
+   DEEPSEEK_API_KEY=your_deepseek_key
    ```
-   Alternatively, you can set the environment variable `OPENROUTER_API_KEY` in your system.
 
 2. **config.json**  
    The script reads parameters from `config.json`. A typical structure might look like:
    ```json
    {
-     "run_test": true,
-     "run_analysis": false,
-     "datasets": ["main", "p1", "p2"],
-     "gsm_types": ["gsm8-std", "gsm-symbolic"],
-     "models": ["meta-llama/llama-3.1-8b-instruct", "meta-llama/llama-3.1-70b-instruct"],
-     "max_reflection_layers": 3,
-     "auto_prompt_model": "same"
+    "datasets": ["main", "p1", "p2"],
+    "gsm_types": ["gsm-symbolic", "gsm8-std"],
+    "models": {
+         "gpt-4o-2024-11-20": {
+            "input_token_cost": 0.0000025,
+            "output_token_cost": 0.00001
+         },
+         "llama-3.1-70b-instruct":{
+            "name": "meta-llama/llama-3.1-70b-instruct",
+            "provider": "openrouter",
+            "supports_sampling_params": true
+        },
+        ...
+    },
+    "max_reflection_layers": 3,
+    "auto_prompt_model": "same",
+    "run_test": true,
+    "run_analysis": true,
+    "test_types": {
+        "run_base": true,
+        "run_cot": true,
+        "run_traditional_self_reflection": true,
+        "run_multi_layer_self_reflection": true
+
+    }
    }
    ```
-   - `run_test`: whether to run the main experiment.
-   - `run_analysis`: whether to parse and summarize results into an Excel file.
-   - `datasets`: which GSM-Symbolic subsets to use (`main`, `p1`, `p2`).
-   - `gsm_types`: which dataset format to load (`gsm8-std` or `gsm-symbolic`).
-   - `models`: list of models to test.
-   - `max_reflection_layers`: how many multi-layer reflections to allow.
-   - `auto_prompt_model`: which model to use for generating auto-prompts. `"same"` means the same model does both tasks.
 
 ---
 
@@ -119,31 +131,47 @@ python run_test.py
 ```
 This will parse the existing CSVs in `results/` and produce the summary Excel.
 
+### Cost Calculation
+
+We provide detailed cost tracking through `cost_calculator.py`:
+```bash
+python cost_calculator.py
+```
+- Token counting using TikToken
+- Model-specific pricing from `model_pricing.json`
+- Separates costs for:
+  - Initial CoT prompts
+  - Reflection generations
+  - Re-answer attempts
+- Produces Excel reports with per-model breakdowns
+
 ---
 
 ## Method Details
 
-**Multi-Layer Reflection**:
-1. **CoT Answer**: Prompt the model with standard chain-of-thought to get an initial solution.
-2. **Check**: If the solution is incorrect, generate a custom reflection prompt (auto-prompt) using meta-prompting.
-3. **Reflection**: The model explains why the attempt might be wrong, identifies potential pitfalls, and re-solves the problem.
-4. **Repeat**: Continue until the answer is correct or you hit the `max_reflection_layers` limit.
-
-This approach is described in detail in our paper. It significantly mitigates the drop in performance on symbolically modified or extended problems (p1, p2 in GSM-Symbolic).
-
----
+### Enhanced Reflection Process
+1. **Chain-of-Thought (CoT) Baseline**: Initial reasoning with 8-shot prompting
+2. **Error Detection**: Automatic answer extraction and validation
+3. **Adaptive Reflection**:
+   - *Traditional Method*: Fixed reflection template
+   - *Multi-layer Method*: Auto-generated prompts via meta-prompting
+4. **Iterative Refinement**: Up to 3 reflection layers with:
+   - Customized instructions
+   - Error type classification
+   - Step-by-step solution regeneration
 
 ## Benchmarks
 
-We use:
-
-- **[GSM8K](https://github.com/openai/grade-school-math)**: 8.5k standard math word problems.
-- **[GSM-Symbolic](https://arxiv.org/abs/2410.05229)**: A version of GSM8K with altered numerical values, extra clauses, and symbolic twists. Includes three variants:
-  - `main`: Substitutes names/values.
-  - `p1`: Adds 1 extra clause of complexity.
-  - `p2`: Adds 2 extra clauses of complexity.
-
-The code snippet demonstrates how to automatically load `main`, `p1`, or `p2` splits via the Hugging Face `datasets` library.
+Supported models in `model_pricing.json`:
+```json
+{
+    "gpt-4o-2024-11-20": {
+        "input_token_cost": 0.0000025,
+        "output_token_cost": 0.00001
+    },
+    // ... other models ...
+}
+```
 
 ---
 
@@ -161,7 +189,5 @@ If you find this repository or our paper helpful in your research, please cite i
 ```
 
 ---
-
-
 
 Thank you for your interest in **Multi-Layered Self-Reflection with Auto-Prompting**! If you have any questions, suggestions, or feedback, feel free to open an issue or submit a pull request.
