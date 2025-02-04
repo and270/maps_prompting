@@ -4,6 +4,7 @@ from methods import extract_answer_gsm_format, generate_auto_reflection_auto_ada
 import json
 import os
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv(override=True)
 
@@ -69,38 +70,46 @@ def main():
 
     # Show either chat input or new question button
     if not st.session_state.messages:
-        # Chat input only shown when no conversation is active
         if question := st.chat_input("Enter your question:"):
             st.session_state.current_question = question
             st.session_state.reflection_layer = 0
             st.session_state.previous_answers = []
             
-            # Initial CoT response
-            cot_prompt = generate_cot_prompt(question)
             api_key = get_api_key(st.session_state.model_info["provider"])
             
-            response = query_model(
-                api_key,
-                cot_prompt,
-                st.session_state.model_info["name"],
-                api_provider=st.session_state.model_info["provider"]
-            )
+            # Create placeholder for response
+            response_placeholder = st.empty()
             
-            if st.session_state.is_gsm8k_format:
-                extracted_answer = extract_answer_gsm_format(response)
-            else:
-                extracted_answer = response
+            # Show loading message
+            with response_placeholder:
+                with st.spinner('Thinking... This might take a few seconds.'):
+                    if st.session_state.is_gsm8k_format:
+                        prompt = generate_cot_prompt(question)
+                    else:
+                        prompt = question
+                    
+                    full_response = query_model(
+                        api_key,
+                        prompt,
+                        st.session_state.model_info["name"],
+                        api_provider=st.session_state.model_info["provider"]
+                    )
+            
+            if full_response:
+                if st.session_state.is_gsm8k_format:
+                    extracted_answer = extract_answer_gsm_format(full_response)
+                else:
+                    extracted_answer = full_response
                 
-            st.session_state.previous_answers.append(response)
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": response,
-                "type": "CoT Answer",
-                "answer": extracted_answer
-            })
-            st.rerun()
+                st.session_state.previous_answers.append(full_response)
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": full_response,
+                    "type": "CoT Answer",
+                    "answer": extracted_answer
+                })
+                st.rerun()
     else:
-        # New question button shown when there's an active conversation
         if st.button("New Question"):
             st.session_state.messages = []
             st.session_state.reflection_layer = 0
@@ -127,49 +136,66 @@ def main():
         if last_msg["type"] != "Reflection":
             col1, col2 = st.columns([1, 4])
             with col1:
-                if st.button(f"Run Reflection Layer {st.session_state.reflection_layer + 1}"):
-                    api_key = get_api_key(st.session_state.model_info["provider"])
-                    
+                reflection_clicked = st.button(f"Run Reflection Layer {st.session_state.reflection_layer + 1}")
+            
+            if reflection_clicked:
+                # Create placeholder for reflection process
+                reflection_placeholder = st.empty()
+                
+                with reflection_placeholder:
+                    with st.spinner('Starting reflection process...'):
+                        api_key = get_api_key(st.session_state.model_info["provider"])
+                        
+                        if st.session_state.is_gsm8k_format:
+                            previous_answers = [msg["answer"] for msg in st.session_state.messages 
+                                             if msg["role"] == "assistant" and "answer" in msg]
+                        else:
+                            previous_answers = [msg["content"] for msg in st.session_state.messages 
+                                             if msg["role"] == "assistant"]
+                        
+                        reflection_prompt = generate_auto_reflection_auto_adapt_prompt(
+                            st.session_state.current_question,
+                            previous_answers,
+                            st.session_state.model_info["name"],
+                            api_key,
+                            st.session_state.model_info["provider"]
+                        )
+                        
+                        # Update loading message for reflection
+                        reflection_placeholder.empty()
+                        with reflection_placeholder:
+                            with st.spinner('Generating reflection...'):
+                                reflection_response = query_model(
+                                    api_key,
+                                    reflection_prompt,
+                                    st.session_state.model_info["name"],
+                                    api_provider=st.session_state.model_info["provider"]
+                                )
+                
+                if reflection_response:
                     if st.session_state.is_gsm8k_format:
-                        previous_answers = [msg["answer"] for msg in st.session_state.messages 
-                                         if msg["role"] == "assistant" and "answer" in msg]
-                    else:
-                        previous_answers = [msg["content"] for msg in st.session_state.messages 
-                                         if msg["role"] == "assistant"]
-                    
-                    reflection_prompt = generate_auto_reflection_auto_adapt_prompt(
-                        st.session_state.current_question,
-                        previous_answers,
-                        st.session_state.model_info["name"],
-                        api_key,
-                        st.session_state.model_info["provider"]
-                    )
-                    
-                    reflection_response = query_model(
-                        api_key,
-                        reflection_prompt,
-                        st.session_state.model_info["name"],
-                        api_provider=st.session_state.model_info["provider"]
-                    )
-                    
-                    reanswer_prompt = generate_reanswer_prompt(
-                        st.session_state.current_question,
-                        previous_answers[-1],
-                        reflection_response
-                    )
-                    
-                    final_response = query_model(
-                        api_key,
-                        reanswer_prompt,
-                        st.session_state.model_info["name"],
-                        api_provider=st.session_state.model_info["provider"]
-                    )
-                    
-                    if st.session_state.is_gsm8k_format:
+                        # Update loading message for reanswer
+                        reflection_placeholder.empty()
+                        with reflection_placeholder:
+                            with st.spinner('Generating final answer...'):
+                                reanswer_prompt = generate_reanswer_prompt(
+                                    st.session_state.current_question,
+                                    previous_answers[-1],
+                                    reflection_response
+                                )
+                                
+                                final_response = query_model(
+                                    api_key,
+                                    reanswer_prompt,
+                                    st.session_state.model_info["name"],
+                                    api_provider=st.session_state.model_info["provider"]
+                                )
+                            
                         extracted_answer = extract_answer_gsm_format(final_response)
                     else:
-                        extracted_answer = final_response
-                        
+                        final_response = reflection_response
+                        extracted_answer = reflection_response
+                    
                     st.session_state.previous_answers.append(final_response)
                     st.session_state.reflection_layer += 1
                     
