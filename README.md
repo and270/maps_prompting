@@ -8,8 +8,9 @@ This repository provides a reference implementation of the **Multi-Layered Self-
 - [Installation](#installation)
 - [Setup](#setup)
 - [Usage](#usage)
-  - [1. Running Tests](#1-running-tests)
-  - [2. Analyzing Results](#2-analyzing-results)
+  - [1. Running the Interactive Demo](#1-running-the-interactive-demo)
+  - [2. Running Tests](#2-running-tests)
+  - [3. Analyzing Results](#3-analyzing-results)
 - [Method Details](#method-details)
 - [Benchmarks](#benchmarks)
 - [Citation](#citation)
@@ -32,6 +33,7 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 - **Auto-Prompt (Meta-Prompt) Generation**: The model adapts its reflection prompt based on the problem's structure and its prior errors, rather than relying on a single, static reflection template.
 - **Multiple LLM Support**: Easily switch between different models (GPT-4o-mini, Llama 3.1–8B, Llama 3.1–70B, etc.) by updating the config.
 - **Benchmark Integration**: Out-of-the-box usage for GSM8K and GSM-Symbolic (main, p1, p2) datasets.
+- **Interactive Demo Interface**: A Streamlit-based web interface for testing the method with different models and reflection layers.
 
 ---
 
@@ -108,16 +110,33 @@ The core idea of **multi-layered Self-Reflection** is to allow the model to:
 
 ## Usage
 
-### 1. Running Tests
+### 1. Running the Interactive Demo
 
-To run the main experiment:
+To launch the web interface:
+```bash
+streamlit run chatbot.py
+```
+
+The interface provides:
+- Model selection from your configured providers
+- Toggle between GSM8K format (numerical answers) and free-form responses
+- Real-time visualization of:
+  - Chain-of-Thought reasoning
+  - Multiple reflection layers
+  - Answer extraction
+- Interactive reflection layer generation
+
+### 2. Running Tests
+
+To reproduce the paper's results and run the main experiment:
 ```bash
 python run_test.py
 ```
 - The script will load each dataset specified in `config.json`, sample data, and query each model in the `models` list.
 - It will generate CSV logs inside a `results/` directory (one CSV per dataset/model combination).
+- This will replicate the experimental setup and evaluation methodology used in the paper.
 
-### 2. Analyzing Results
+### 3. Analyzing Results
 
 If you have `run_analysis` set to `true` in `config.json`, the script will automatically:
 - Load all CSV result files from `results/`
