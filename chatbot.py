@@ -1,13 +1,6 @@
 import streamlit as st
-from run_test import (
-    generate_reanswer_prompt,
-    prepare_dataset,
-    generate_cot_prompt,
-    query_model,
-    generate_auto_reflection_auto_adapt_prompt,
-    extract_answer_gsm_format,
-    evaluate_response
-)
+from llms_api import query_model
+from methods import extract_answer_gsm_format, generate_auto_reflection_auto_adapt_prompt, generate_cot_prompt, generate_reanswer_prompt
 import json
 import os
 from dotenv import load_dotenv
@@ -33,11 +26,15 @@ def initialize_session():
         st.session_state.is_gsm8k_format = True
 
 def get_api_key(provider):
-    return {
+    api_keys = {
         "openrouter": os.getenv("OPENROUTER_API_KEY"),
         "openai": os.getenv("OPENAI_API_KEY"),
         "deepseek": os.getenv("DEEPSEEK_API_KEY")
-    }.get(provider, "")
+    }
+    key = api_keys.get(provider)
+    if not key:
+        raise ValueError(f"Missing API key for provider: {provider}")
+    return key
 
 def main():
     st.title("Math Problem Solver with Self-Reflection")
@@ -46,55 +43,75 @@ def main():
     config = load_config()
     models = config["models"]
     
-    # Model selection
     selected_model = st.selectbox(
         "Select Model",
         options=list(models.keys()),
         format_func=lambda x: f"{x} ({models[x]['provider']})"
     )
     
-    # Answer format selection
+    try:
+        provider = models[selected_model]["provider"]
+        get_api_key(provider)
+    except ValueError as e:
+        st.error(f"⚠️ {str(e)}")
+        st.stop()
+    
     st.session_state.is_gsm8k_format = st.checkbox(
         "GSM8K Format (numerical answer)",
         value=st.session_state.is_gsm8k_format,
         help="If checked, expects a numerical final answer. If unchecked, treats the entire response as the answer."
     )
     
-    # Store model info in session state
     if selected_model != st.session_state.get("selected_model"):
         st.session_state.selected_model = selected_model
         st.session_state.model_info = models[selected_model]
         st.session_state.reflection_layer = 0
 
-    # Chat input
-    if question := st.chat_input("Enter your question:"):
-        st.session_state.current_question = question
-        st.session_state.reflection_layer = 0
-        st.session_state.previous_answers = []
-        
-        # Initial CoT response
-        cot_prompt = generate_cot_prompt(question)
-        api_key = get_api_key(st.session_state.model_info["provider"])
-        
-        response = query_model(
-            api_key,
-            cot_prompt,
-            st.session_state.model_info["name"],
-            api_provider=st.session_state.model_info["provider"]
-        )
-        
-        if st.session_state.is_gsm8k_format:
-            extracted_answer = extract_answer_gsm_format(response)
-        else:
-            extracted_answer = response
+    # Show either chat input or new question button
+    if not st.session_state.messages:
+        # Chat input only shown when no conversation is active
+        if question := st.chat_input("Enter your question:"):
+            st.session_state.current_question = question
+            st.session_state.reflection_layer = 0
+            st.session_state.previous_answers = []
             
-        st.session_state.previous_answers.append(response)
-        st.session_state.messages.append({
-            "role": "assistant",
-            "content": response,
-            "type": "CoT Answer",
-            "answer": extracted_answer
-        })
+            # Initial CoT response
+            cot_prompt = generate_cot_prompt(question)
+            api_key = get_api_key(st.session_state.model_info["provider"])
+            
+            response = query_model(
+                api_key,
+                cot_prompt,
+                st.session_state.model_info["name"],
+                api_provider=st.session_state.model_info["provider"]
+            )
+            
+            if st.session_state.is_gsm8k_format:
+                extracted_answer = extract_answer_gsm_format(response)
+            else:
+                extracted_answer = response
+                
+            st.session_state.previous_answers.append(response)
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": response,
+                "type": "CoT Answer",
+                "answer": extracted_answer
+            })
+            st.rerun()
+    else:
+        # New question button shown when there's an active conversation
+        if st.button("New Question"):
+            st.session_state.messages = []
+            st.session_state.reflection_layer = 0
+            st.session_state.previous_answers = []
+            st.session_state.current_question = None
+            st.rerun()
+
+    # Display current question if it exists
+    if st.session_state.current_question:
+        st.write("**Current Question:**")
+        st.info(st.session_state.current_question)
 
     # Display chat messages
     for msg in st.session_state.messages:
@@ -108,62 +125,62 @@ def main():
     if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
         last_msg = st.session_state.messages[-1]
         if last_msg["type"] != "Reflection":
-            if st.button(f"Run Reflection Layer {st.session_state.reflection_layer + 1}"):
-                api_key = get_api_key(st.session_state.model_info["provider"])
-                
-                # Get previous answers based on format selection
-                if st.session_state.is_gsm8k_format:
-                    previous_answers = [msg["answer"] for msg in st.session_state.messages 
-                                     if msg["role"] == "assistant" and "answer" in msg]
-                else:
-                    previous_answers = [msg["content"] for msg in st.session_state.messages 
-                                     if msg["role"] == "assistant"]
-                
-                reflection_prompt = generate_auto_reflection_auto_adapt_prompt(
-                    st.session_state.current_question,
-                    previous_answers,
-                    st.session_state.model_info["name"],
-                    api_key,
-                    st.session_state.model_info["provider"]
-                )
-                
-                reflection_response = query_model(
-                    api_key,
-                    reflection_prompt,
-                    st.session_state.model_info["name"],
-                    api_provider=st.session_state.model_info["provider"]
-                )
-                
-                # Generate re-answer with appropriate previous answer format
-                reanswer_prompt = generate_reanswer_prompt(
-                    st.session_state.current_question,
-                    previous_answers[-1],  # Last answer (either extracted or full)
-                    reflection_response
-                )
-                
-                final_response = query_model(
-                    api_key,
-                    reanswer_prompt,
-                    st.session_state.model_info["name"],
-                    api_provider=st.session_state.model_info["provider"]
-                )
-                
-                if st.session_state.is_gsm8k_format:
-                    extracted_answer = extract_answer_gsm_format(final_response)
-                else:
-                    extracted_answer = final_response
+            col1, col2 = st.columns([1, 4])
+            with col1:
+                if st.button(f"Run Reflection Layer {st.session_state.reflection_layer + 1}"):
+                    api_key = get_api_key(st.session_state.model_info["provider"])
                     
-                st.session_state.previous_answers.append(final_response)
-                st.session_state.reflection_layer += 1
-                
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": final_response,
-                    "type": f"Reflection Layer {st.session_state.reflection_layer}",
-                    "answer": extracted_answer
-                })
-                
-                st.rerun()
+                    if st.session_state.is_gsm8k_format:
+                        previous_answers = [msg["answer"] for msg in st.session_state.messages 
+                                         if msg["role"] == "assistant" and "answer" in msg]
+                    else:
+                        previous_answers = [msg["content"] for msg in st.session_state.messages 
+                                         if msg["role"] == "assistant"]
+                    
+                    reflection_prompt = generate_auto_reflection_auto_adapt_prompt(
+                        st.session_state.current_question,
+                        previous_answers,
+                        st.session_state.model_info["name"],
+                        api_key,
+                        st.session_state.model_info["provider"]
+                    )
+                    
+                    reflection_response = query_model(
+                        api_key,
+                        reflection_prompt,
+                        st.session_state.model_info["name"],
+                        api_provider=st.session_state.model_info["provider"]
+                    )
+                    
+                    reanswer_prompt = generate_reanswer_prompt(
+                        st.session_state.current_question,
+                        previous_answers[-1],
+                        reflection_response
+                    )
+                    
+                    final_response = query_model(
+                        api_key,
+                        reanswer_prompt,
+                        st.session_state.model_info["name"],
+                        api_provider=st.session_state.model_info["provider"]
+                    )
+                    
+                    if st.session_state.is_gsm8k_format:
+                        extracted_answer = extract_answer_gsm_format(final_response)
+                    else:
+                        extracted_answer = final_response
+                        
+                    st.session_state.previous_answers.append(final_response)
+                    st.session_state.reflection_layer += 1
+                    
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": final_response,
+                        "type": f"Reflection Layer {st.session_state.reflection_layer}",
+                        "answer": extracted_answer
+                    })
+                    
+                    st.rerun()
 
 if __name__ == "__main__":
     main() 
