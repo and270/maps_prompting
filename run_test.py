@@ -264,11 +264,6 @@ def worker(args):
         print(f"Error in worker thread: {e}")
 
 def analyze_results(results_dir="results"):
-    """
-    Analyze all expanded results CSV files (produced by `save_results`) in `results_dir`
-    and create a single Excel file summarizing the accuracy at each method/level.
-    This version converts key columns to numeric values so that reflection layer comparisons work.
-    """
     import pandas as pd
     import os
 
@@ -277,123 +272,136 @@ def analyze_results(results_dir="results"):
         print("No CSV results files found in the directory.")
         return
 
-    # Read in all CSVs and combine them
+    # Read all CSVs and combine them
     df_list = []
     for file in all_files:
         file_path = os.path.join(results_dir, file)
         temp_df = pd.read_csv(file_path)
         df_list.append(temp_df)
-    if not df_list:
-        print("No data found in the results directory.")
-        return
-
     df = pd.concat(df_list, ignore_index=True)
 
-    # Convert key score and layer columns to numeric.
-    # (This helps when the CSV stores numbers as strings or leaves them as NaN.)
-    cols_to_convert = [
-        "base_score", "cot_score", "traditional_reflection_score",
+    # Convert key columns to numeric
+    numeric_cols = [
+        "base_score", "cot_score",
+        "traditional_reflection_score",
         "reflection_layer", "reflection_score"
     ]
-    for col in cols_to_convert:
+    for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-    # This helper aggregates multiple rows for a single question.
+    # Group-level aggregator for each question
     def combine_question_data(group):
-        # Get the base and CoT scores from the first (or only) row.
-        base_score = group["base_score"].dropna().iloc[0] if not group["base_score"].dropna().empty else 0
-        cot_score = group["cot_score"].dropna().iloc[0] if not group["cot_score"].dropna().empty else 0
-        trad_score = group["traditional_reflection_score"].dropna().iloc[0] if not group["traditional_reflection_score"].dropna().empty else 0
+        # Base score + CoT score are typically 0 or 1 per question.
+        # We use .iloc[0] because base_score/cot_score are repeated on every row for that question anyway.
+        base_score = group["base_score"].iloc[0]
+        cot_score = group["cot_score"].iloc[0]
 
-        # For reflection layers, look for rows whose "reflection_layer" matches the desired layer.
-        reflection_scores = {}
-        # We expect layers 1, 2, and 3 (layer 0 is used if the CoT answer was already correct).
-        for layer in [1, 2, 3]:
-            match = group[group["reflection_layer"] == layer]
-            if not match.empty:
-                try:
-                    reflection_scores[layer] = float(match["reflection_score"].iloc[0])
-                except Exception as e:
-                    reflection_scores[layer] = 0
-            else:
-                reflection_scores[layer] = 0
+        # Traditional reflection
+        trad_scores = group["traditional_reflection_score"].dropna()
+        trad_attempted = len(trad_scores) > 0
+        trad_success = trad_scores.max() if trad_attempted else 0
+
+        # For multi-layer reflection, figure out if each layer was correct (0 or 1).
+        # Use .max() so if there's more than one row for a layer, we pick up if any row was correct.
+        reflection_layer_1_score = group.loc[group["reflection_layer"] == 1, "reflection_score"].max() if (group["reflection_layer"] == 1).any() else 0
+        reflection_layer_2_score = group.loc[group["reflection_layer"] == 2, "reflection_score"].max() if (group["reflection_layer"] == 2).any() else 0
+        reflection_layer_3_score = group.loc[group["reflection_layer"] == 3, "reflection_score"].max() if (group["reflection_layer"] == 3).any() else 0
+
+        # Now define two new columns:
+        # 1. Score if we only allow reflection layer 1 (i.e. CoT or layer 1).
+        score_up_to_layer_1 = max(cot_score, reflection_layer_1_score)
+
+        # 2. Score if we allow up to layer 3 (i.e. CoT or any reflection layer).
+        score_up_to_layer_3 = max(
+            cot_score,
+            reflection_layer_1_score,
+            reflection_layer_2_score,
+            reflection_layer_3_score
+        )
 
         return pd.Series({
             "base_score": base_score,
             "cot_score": cot_score,
-            "traditional_reflection_score": trad_score,
-            "reflection_layer_1_score": reflection_scores[1],
-            "reflection_layer_2_score": reflection_scores[2],
-            "reflection_layer_3_score": reflection_scores[3],
+
+            "trad_attempted": int(trad_attempted),
+            "trad_success": trad_success,
+
+            "reflection_layer_1_score": reflection_layer_1_score,
+            "reflection_layer_2_score": reflection_layer_2_score,
+            "reflection_layer_3_score": reflection_layer_3_score,
+
+            # New columns:
+            "score_up_to_layer_1": score_up_to_layer_1,
+            "score_up_to_layer_3": score_up_to_layer_3
         })
 
-    # Group by each unique question (using dataset, gsm_type, model, and question text)
+    # Aggregate at the question level
     pivot_df = (
-        df.groupby(["dataset", "gsm_type", "model", "question"], as_index=False)
-          .apply(combine_question_data)
+        df
+        .groupby(["dataset", "gsm_type", "model", "question"], as_index=False)
+        .apply(combine_question_data)
     )
 
-    # Now group by dataset, gsm_type, and model to aggregate results.
+    # Summarize at dataset/gsm_type/model level
     summary_df = (
-        pivot_df.groupby(["dataset", "gsm_type", "model"], as_index=False)
-                .agg({
-                    "base_score": "sum",
-                    "cot_score": "sum",
-                    "traditional_reflection_score": "sum",
-                    "reflection_layer_1_score": "sum",
-                    "reflection_layer_2_score": "sum",
-                    "reflection_layer_3_score": "sum",
-                    "question": "count"
-                })
+        pivot_df
+        .groupby(["dataset", "gsm_type", "model"], as_index=False)
+        .agg({
+            "base_score": "sum",
+            "cot_score": "sum",
+            "trad_attempted": "sum",
+            "trad_success": "sum",
+            "reflection_layer_1_score": "sum",
+            "reflection_layer_2_score": "sum",
+            "reflection_layer_3_score": "sum",
+            "score_up_to_layer_1": "sum",  # sum across questions
+            "score_up_to_layer_3": "sum",  # sum across questions
+            "question": "count"
+        })
+        .rename(columns={"question": "total_questions"})
     )
-    summary_df.rename(columns={"question": "total_questions"}, inplace=True)
 
-    # Compute accuracies (scores divided by the total number of questions)
+    # Basic accuracies
     summary_df["base_accuracy"] = summary_df["base_score"] / summary_df["total_questions"]
     summary_df["cot_accuracy"] = summary_df["cot_score"] / summary_df["total_questions"]
-    summary_df["traditional_reflection_accuracy"] = summary_df["traditional_reflection_score"] / summary_df["total_questions"]
-    summary_df["reflection_layer_1_accuracy"] = summary_df["reflection_layer_1_score"] / summary_df["total_questions"]
-    summary_df["reflection_layer_2_accuracy"] = summary_df["reflection_layer_2_score"] / summary_df["total_questions"]
-    summary_df["reflection_layer_3_accuracy"] = summary_df["reflection_layer_3_score"] / summary_df["total_questions"]
 
-    # Calculate aggregated self-reflection accuracies.
-    summary_df["self_reflection_layer_1_only_accuracy"] = summary_df["cot_accuracy"] + summary_df["reflection_layer_1_accuracy"]
-    summary_df["self_reflection_total_accuracy"] = (summary_df["cot_accuracy"] +
-                                                    summary_df["reflection_layer_1_accuracy"] +
-                                                    summary_df["reflection_layer_2_accuracy"] +
-                                                    summary_df["reflection_layer_3_accuracy"])
-
-    # Optionally, drop the raw score columns if you only want the accuracies.
-    summary_df.drop(
-        columns=["base_score", "cot_score", "traditional_reflection_score",
-                 "reflection_layer_1_score", "reflection_layer_2_score", "reflection_layer_3_score"],
-        inplace=True
+    # Traditional reflection accuracy (depending on your definition)
+    summary_df["traditional_reflection_accuracy"] = (
+        summary_df["trad_success"] / summary_df["total_questions"]
     )
 
-    # Reorder the columns
-    summary_df = summary_df[
-        [
-            "dataset",
-            "gsm_type",
-            "model",
-            "total_questions",
-            "base_accuracy",
-            "cot_accuracy",
-            "traditional_reflection_accuracy",
-            "reflection_layer_1_accuracy",
-            "reflection_layer_2_accuracy",
-            "reflection_layer_3_accuracy",
-            "self_reflection_layer_1_only_accuracy",
-            "self_reflection_total_accuracy"
-        ]
-    ]
+    # Reflection layers
+    summary_df["reflection_layer_1_accuracy"] = (
+        summary_df["reflection_layer_1_score"] / summary_df["total_questions"]
+    )
+    summary_df["reflection_layer_2_accuracy"] = (
+        summary_df["reflection_layer_2_score"] / summary_df["total_questions"]
+    )
+    summary_df["reflection_layer_3_accuracy"] = (
+        summary_df["reflection_layer_3_score"] / summary_df["total_questions"]
+    )
 
+    # Now the two columns you requested as sums: 
+    #  "score_up_to_layer_1" (the number of questions correct by CoT or layer1)
+    #  "score_up_to_layer_3" (the number of questions correct by CoT or layer1/2/3)
+    # If you also want them as *accuracies*, do:
+    summary_df["accuracy_up_to_layer_1"] = (
+        summary_df["score_up_to_layer_1"] / summary_df["total_questions"]
+    )
+    summary_df["accuracy_up_to_layer_3"] = (
+        summary_df["score_up_to_layer_3"] / summary_df["total_questions"]
+    )
+
+    # Save results to Excel
     output_path = os.path.join(results_dir, "summary_results.xlsx")
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         summary_df.to_excel(writer, index=False, sheet_name="Summary")
 
-    print(f"Summary results saved to {output_path}")
+    print("Saved summarized results to:", output_path)
+    return summary_df
+
+
 
 
 def main():
