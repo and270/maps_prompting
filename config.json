@@ -25,13 +25,13 @@
     },
     "max_reflection_layers": 3,
     "auto_prompt_model": "same",
-    "run_test": false,
+    "run_test": true,
     "run_analysis": true,
 
     "test_types": {
-        "run_base": false,
-        "run_cot": false,
-        "run_traditional_self_reflection": false,
-        "run_multi_layer_self_reflection": false
+        "run_base": true,
+        "run_cot": true,
+        "run_traditional_self_reflection": true,
+        "run_multi_layer_self_reflection": true
     }
 }
