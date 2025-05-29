@@ -15,8 +15,7 @@ from llms_api import query_model
 from methods import (
     extract_answer_gsm_format,
     extract_answer_math, 
-    extract_answer_aime, 
-    extract_patch_swe_bench, 
+    extract_answer_aime,
     generate_auto_reflection_auto_adapt_prompt,
     generate_auto_reflection_traditional_prompt,
     generate_cot_prompt,
