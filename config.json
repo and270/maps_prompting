@@ -50,12 +50,14 @@
 
     "MATH_params": {
         "hf_id": "nlile/hendrycks-MATH-benchmark",
-        "evaluation_type": "exact_match_latex_normalized"
+        "evaluation_type": "exact_match_latex_normalized",
+        "max_test_samples": 100
     },
     "AIME_params": {
         "hf_id": "gneubig/aime-1983-2024",
         "evaluation_type": "exact_string_match",
-        "data_file": "AIME_Dataset_1983_2024.csv"
+        "data_file": "AIME_Dataset_1983_2024.csv",
+        "max_test_samples": 100
     },
 
     "test_types": {
