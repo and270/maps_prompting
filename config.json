@@ -1,6 +1,6 @@
 {
-    "datasets": ["main", "p1", "p2", "MATH", "AIME", "SWE-bench"],
-    "gsm_types": ["gsm-symbolic", "gsm8-std", "MATH", "AIME", "SWE-bench"],
+    "datasets": ["main", "p1", "p2", "MATH", "AIME"],
+    "gsm_types": ["gsm-symbolic", "gsm8-std", "MATH", "AIME"],
     "models": {
         "gpt-4o":{
             "name": "gpt-4o-2024-11-20",
@@ -56,14 +56,6 @@
         "hf_id": "gneubig/aime-1983-2024",
         "evaluation_type": "exact_string_match",
         "data_file": "AIME_Dataset_1983_2024.csv"
-    },
-    "SWE_bench_params": {
-        "hf_id": "princeton-nlp/SWE-bench_Verified",
-        "evaluation_type": "swe_bench_harness",
-        "docker_image": "swebench/swe-bench-runner:latest",
-        "harness_script_path": "./swe_bench_scripts/run_evaluation_placeholder.sh", # This will be updated by user to actual harness path
-        "predictions_file_path": "./swe_bench_temp/predictions.jsonl",
-        "swe_bench_repo_path": "/path/to/your/SWE-bench/" # User must update this path
     },
 
     "test_types": {

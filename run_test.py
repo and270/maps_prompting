@@ -2,11 +2,11 @@
 
 import os
 import json
+import re
 import pandas as pd
 from datasets import load_dataset
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import subprocess # Added for SWE-bench
 import math # Added for MATH evaluation
 import sympy # Added for MATH evaluation
 
@@ -27,7 +27,7 @@ from methods import (
 def prepare_dataset(dataset_name, config):
     """
     Loads the specified dataset and returns a sample.
-    Handles GSM-Symbolic, MATH, AIME, and SWE-bench datasets based on dataset_name and config.
+    Handles GSM-Symbolic, MATH, AIME  datasets based on dataset_name and config.
     """
     print(f"Loading the {dataset_name} dataset...")
 
@@ -86,18 +86,6 @@ def prepare_dataset(dataset_name, config):
         sample = df.groupby("original_id").sample(n=1, random_state=42)
         print(f"Dataset {dataset_name} (GSM-Symbolic type) loaded. Size: {len(sample)}.")
 
-    elif dataset_name == "SWE-bench":
-        swe_params = config.get("SWE_bench_params", {})
-        hf_id_swe = swe_params.get("hf_id", "princeton-nlp/SWE-bench_Verified")
-        ds = load_dataset(hf_id_swe) 
-        if "test" not in ds: raise ValueError(f"SWE-bench '{hf_id_swe}' no 'test' split.")
-        df = pd.DataFrame(ds["test"])
-        expected_cols = ["instance_id", "problem_statement", "base_commit", "patch", "test_patch"]
-        if not all(col in df.columns for col in expected_cols):
-             raise ValueError(f"SWE-bench missing expected columns. Found: {list(df.columns)}")
-        sample_size = min(len(df), swe_params.get("max_test_samples", 50)) 
-        sample = df.sample(n=sample_size, random_state=42)
-        print(f"Dataset {dataset_name} loaded. Sample size: {len(sample)}. Columns verified.")
     else:
         raise ValueError(f"Unsupported dataset_name: '{dataset_name}'.")
     return sample
@@ -138,10 +126,6 @@ def _normalize_for_string_compare(text_expr):
 # --- End of MATH Helper functions ---
 
 def evaluate_response(response_text, expected_answer_text, benchmark_name, config, instance_id=None):
-    # ... (evaluate_response logic remains the same as previously defined, including MATH, AIME, GSM, SWE-bench) ...
-    # This function was already updated in previous subtasks to handle instance_id for MATH logging.
-    # No changes needed here for this specific subtask if it's already correct.
-    # For brevity, assuming the complex evaluate_response logic is here from previous steps.
     if response_text is None: return 0
     try:
         if benchmark_name == "MATH":
@@ -164,23 +148,16 @@ def evaluate_response(response_text, expected_answer_text, benchmark_name, confi
             norm_actual_str = _normalize_for_string_compare(actual_extracted); norm_expected_str = _normalize_for_string_compare(expected_extracted)
             if norm_actual_str == norm_expected_str: print(f"{log_prefix} Normalized String Match."); return 1
             print(f"{log_prefix} All comparisons failed."); return 0
-        elif benchmark_name == "AIME": # Simplified from previous version
+        elif benchmark_name == "AIME":
             actual_extracted_answer = extract_answer_aime(response_text)
             if actual_extracted_answer is None: return 0
             return 1 if actual_extracted_answer.strip() == str(expected_answer_text).strip() else 0
-        elif benchmark_name in ["gsm-symbolic", "gsm8-std", "main", "p1", "p2"]: # Simplified
+        elif benchmark_name in ["gsm-symbolic", "gsm8-std", "main", "p1", "p2"]:
             extracted_response_val = extract_answer_gsm_format(response_text)
             if extracted_response_val is None: return 0
             try: expected_float = float(expected_answer_text)
             except: return 0
             return 1 if abs(extracted_response_val - expected_float) < 1e-5 else 0
-        elif benchmark_name == "SWE-bench": # Simplified from previous version for brevity
-            if not instance_id or not config: return 0
-            patch_content = extract_patch_swe_bench(response_text)
-            if not patch_content: return 0
-            # SIMULATED HARNESS LOGIC - returns 1 if patch exists for this stub
-            print(f"[Info] SWE-bench (Instance: {instance_id}): SIMULATED HARNESS - Patch extracted, returning 1.")
-            return 1 
         else: print(f"[Error] Unknown benchmark_name '{benchmark_name}' in evaluate_response."); return 0
     except Exception as e:
         print(f"[Error] Exc in evaluate_response for '{benchmark_name}' (Inst: {instance_id}): {e}. Resp: '{str(response_text)[:100]}...' Exp: '{str(expected_answer_text)[:100]}...'")
@@ -203,8 +180,6 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
             math_type = row.get("type")   
         elif benchmark_name == "AIME":
             question, expected_answer_val = row["Problem"], str(row["Answer"])
-        elif benchmark_name == "SWE-bench":
-            question, expected_answer_val = row["problem_statement"], row["patch"]
         else:
             print(f"[Warning] Unknown benchmark '{benchmark_name}' for row {idx}.")
             question, expected_answer_val = row.get("question", "N/A"), None
@@ -224,7 +199,6 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                 if config["test_types"]["run_base"]:
                     base_full_response = query_model(api_key, question, model, supports_sampling_params)
                     if benchmark_name == "MATH": base_response = extract_answer_math(base_full_response)
-                    elif benchmark_name == "SWE-bench": base_response = extract_patch_swe_bench(base_full_response)
                     else: base_response = extract_answer_gsm_format(base_full_response)
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
                     print(f"Base Extracted: {str(base_response)[:100]}... Score: {base_score}")
@@ -233,7 +207,6 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     cot_prompt = generate_cot_prompt(question, benchmark_name)
                     cot_full_response = query_model(api_key, cot_prompt, model, supports_sampling_params)
                     if benchmark_name == "MATH": cot_response = extract_answer_math(cot_full_response)
-                    elif benchmark_name == "SWE-bench": cot_response = extract_patch_swe_bench(cot_full_response)
                     else: cot_response = extract_answer_gsm_format(cot_full_response)
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
                     print(f"CoT Extracted: {str(cot_response)[:100]}... Score: {cot_score}")
@@ -245,7 +218,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     trad_reanswer_prompt = generate_reanswer_prompt(question, cot_response, trad_reflect_resp)
                     trad_reanswer_resp = query_model(api_key, trad_reanswer_prompt, model, supports_sampling_params)
                     trad_score = evaluate_response(trad_reanswer_resp, expected_answer_val, benchmark_name, config, current_instance_id)
-                    trad_extracted = extract_patch_swe_bench(trad_reanswer_resp) if benchmark_name == "SWE-bench" else extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
+                    trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
                     reflection_data_traditional_method.append({"layer": None, "score": trad_score, "response": trad_extracted, "reflection_prompt": trad_reflect_prompt, "full_response": trad_reflect_resp, "auto_prompt_used": "traditional"})
                 elif config["test_types"]["run_traditional_self_reflection"] and cot_score == 1:
                      reflection_data_traditional_method.append({"layer": None, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": None, "auto_prompt_used": None})
@@ -262,7 +235,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                             reanswer_prompt = generate_reanswer_prompt(question, cur_ans_ext, reflect_resp)
                             reanswer_full_resp = query_model(api_key, reanswer_prompt, model, supports_sampling_params)
                             cur_score = evaluate_response(reanswer_full_resp, expected_answer_val, benchmark_name, config, current_instance_id)
-                            cur_ans_ext = extract_patch_swe_bench(reanswer_full_resp) if benchmark_name == "SWE-bench" else extract_answer_math(reanswer_full_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_resp)
+                            cur_ans_ext = extract_answer_math(reanswer_full_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_resp)
                             reflection_data_multi_layer__method.append({
                                 "layer": layer + 1, "score": cur_score, "response": cur_ans_ext, 
                                 "reflection_prompt": adapt_prompt, "full_response": reflect_resp, 
@@ -415,7 +388,7 @@ def main():
         dataset_samples = {name: prepare_dataset(name, config) for name in datasets_cfg}
         tasks = []
         for ds_name in datasets_cfg:
-            if ds_name in ["MATH", "AIME", "SWE-bench"]: # Direct benchmarks
+            if ds_name in ["MATH", "AIME"]:
                 for model_info in models_cfg.values(): tasks.append((ds_name, ds_name, model_info, dataset_samples[ds_name], None, config))
             elif ds_name in gsm_types_cfg or ds_name == "main": 
                 valid_gsm_benchmarks = [b for b in (gsm_types_cfg if ds_name == "main" else [ds_name]) if b in ["gsm-symbolic", "gsm8-std"]]

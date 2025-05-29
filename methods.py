@@ -142,69 +142,6 @@ $N \equiv 9 \pmod{45}$.
 The final answer is 9
 """
 
-SWE_BENCH_SHOT_EXAMPLES = """
-Here are examples of how to respond to SWE-bench tasks:
-
-Problem: The script `user_management.py` fails with a `KeyError` if the user's profile is missing the 'email' field. We need to handle this gracefully by defaulting to a placeholder email.
-
-Plan:
-1. Locate the section in `user_management.py` where the 'email' field is accessed.
-2. Use the `.get()` method for dictionaries, providing a default value like 'no-email@example.com'.
-3. Add a log message when a default email is used for better traceability.
-
-Patch:
-```diff
---- a/user_management.py
-+++ b/user_management.py
-@@ -25,7 +25,10 @@
- class User:
-     def __init__(self, profile_data):
-         self.name = profile_data['name']
--        self.email = profile_data['email']
-+        self.email = profile_data.get('email', 'no-email@example.com')
-+        if self.email == 'no-email@example.com':
-+            # Consider logging this instead of printing for production code
-+            print(f"Warning: User {self.name} has no email, using default.")
-         self.user_id = profile_data['id']
-
-     def get_details(self):
-```
-
-Problem: The date formatting function `format_date` in `utils/time_helpers.py` does not handle timezone conversions correctly, leading to off-by-one day errors for users in different timezones. The function should always convert dates to UTC before formatting.
-
-Plan:
-1. Import the `pytz` library for timezone handling.
-2. Modify the `format_date` function:
-    a. If the input `datetime` object is naive, assume it's UTC.
-    b. Convert the timezone-aware or UTC-assumed datetime object to UTC.
-    c. Format the UTC datetime object.
-3. Add test cases for various input timezones.
-
-Patch:
-```diff
---- a/utils/time_helpers.py
-+++ b/utils/time_helpers.py
-@@ -1,5 +1,6 @@
- import datetime
-+import pytz # Ensure pytz is added to requirements.txt
-
- def format_date(dt, fmt="%Y-%m-%d %H:%M:%S"):
-     """
-@@ -7,5 +8,9 @@
-     If the datetime object is naive, it's assumed to be in UTC.
-     """
-     if dt.tzinfo is None:
--        dt = dt.replace(tzinfo=datetime.timezone.utc)
--    return dt.strftime(fmt)
-+        # Assume naive datetime is UTC
-+        dt_utc = pytz.utc.localize(dt)
-+    else:
-+        # Convert timezone-aware datetime to UTC
-+        dt_utc = dt.astimezone(pytz.utc)
-+    return dt_utc.strftime(fmt)
-```
-"""
-
 # Meta-prompt for generating reflection prompts for MATH-like problems
 MATH_META_PROMPT = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 
@@ -252,75 +189,6 @@ Question: {question}
 Generate the adapted Self-Reflection prompt (remember, you need to create a similar example question on complexity to the question received (NOT THE SAME ONE), a wrong answer to it and the correct answer):
 """
 
-# Meta-prompt for generating reflection prompts for SWE-bench problems
-SWE_BENCH_META_PROMPT = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to **fix a software bug or implement a feature described in a GitHub issue**. You will receive the original issue description and should adapt the prompt based on it.
-
-Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the software engineering problem. Focus on aspects such as:
-
-*   **Type of problem**: e.g., "bug fix in data validation," "refactoring for performance," "UI layout adjustment," "incorrect API usage," "concurrency issue."
-*   **Common mistakes**: e.g., "off-by-one errors," "null pointer exceptions," "race conditions," "incorrect assumptions about external APIs," "missing edge case handling," "security vulnerabilities."
-*   **Complexity of the problem**: e.g., "scope of changes (single vs. multi-file)," "algorithmic complexity of the fix," "interaction with other system components," "need for new dependencies."
-
-Here is the original Self-Reflection template that you should adapt:
-
---- Beginning of the template ---
-You are an expert in <PROBLEM_AREA, e.g., Python bug fixing, frontend development>.
-You have provided an incorrect code patch for the following issue.
-Your task is to reflect on the problem, your proposed solution, and why it might have failed (e.g., based on test results or logical review).
-You will then use this information to help you generate a corrected patch.
-First, explain why your previous patch might have been incorrect or incomplete.
-Second, list keywords that describe the type of your errors or omissions (e.g., "Logic error," "Missing edge case," "Incorrect API usage," "Concurrency").
-Third, outline a plan to generate a corrected patch, step-by-step.
-Fourth, create a list of detailed instructions or checks for yourself to ensure the new patch is correct.
-Finally, create a list of general advice to help you solve similar types of software issues in the future.
-Be concise in your response; however, capture all essential information.
-For guidance, I will provide you with a single generic example problem and reflection (below).
-[Example Input]
-Issue: "The application crashes with a `KeyError: 'user_id'` when processing webhook events if the `user_id` field is missing from the incoming JSON payload. This happens because the code directly accesses `payload['user_id']` without checking for its existence."
-Wrong Patch:
-```diff
---- a/main.py
-+++ b/main.py
-@@ -10,6 +10,7 @@
- def process_event(payload):
-   # user_id = payload['user_id'] # Original failing line
-   user_id = payload.get('user_id', 'default_user') # Attempted fix
-+  # Problem: 'default_user' might not be acceptable for all downstream processes.
-   print(f"Processing event for {user_id}")
-   # ... further processing ...
-```
----
-[Example Output]
-Explanation:
-My previous patch used `payload.get('user_id', 'default_user')`. While this prevents the `KeyError`, assigning a 'default_user' might hide the actual problem or lead to incorrect data association. The core issue is that a missing `user_id` might signify an invalid event that should be logged as an error or handled differently, rather than processed with a default. The reflection should consider if the event can be processed without a user_id or if it should be rejected.
-Error Keywords:
-- Incorrect error handling
-- Faulty assumption
-- Masking underlying issue
-- Input validation
-Instructions:
-1. Re-evaluate the requirement: Is `user_id` absolutely mandatory?
-2. If mandatory, the patch should reject payloads missing `user_id` or log a critical error.
-3. If optional, ensure downstream components correctly handle a `None` or special marker for `user_id`.
-4. Do not introduce placeholder values that could corrupt data or hide errors.
-5. Consider the impact on data integrity and system behavior.
-Advice:
-- Always understand the full context of an error before patching.
-- Prefer failing fast or explicitly handling missing data over introducing potentially problematic defaults.
-- Consider all implications of a fix, including data integrity and security.
-- Ensure error messages are clear and actionable.
-Corrected Plan Outline:
-1. Check if 'user_id' is in payload.
-2. If not, log an error and return an appropriate error response (e.g., HTTP 400 if it\'s a web handler).
-3. If present, proceed with existing logic.
---- End of the template ---
-
-Now, adapt the above template for the following issue:
-
-Issue: {question}
-
-Generate the adapted Self-Reflection prompt (remember, you need to create a similar example issue, a wrong patch, and the correct reflection logic as guided by the template above):
-"""
 
 
 def generate_cot_prompt(question, benchmark_name):
@@ -328,22 +196,11 @@ def generate_cot_prompt(question, benchmark_name):
         selected_examples = MATH_SHOT_EXAMPLES
     elif benchmark_name == "AIME":
         selected_examples = AIME_SHOT_EXAMPLES
-    elif benchmark_name == "SWE-bench":
-        selected_examples = SWE_BENCH_SHOT_EXAMPLES
     # Default to EIGHT_SHOT_EXAMPLES for GSM types ("gsm-symbolic", "gsm8-std", "main", "p1", "p2") or any other
     else: 
         selected_examples = EIGHT_SHOT_EXAMPLES
 
-    if benchmark_name == "SWE-bench":
-        # For SWE-bench, the prompt structure is different after the examples.
-        return f"""{selected_examples}
-
-Problem: {question}
-
-Plan:""" # The LLM is expected to continue with the plan and then the patch.
-    else:
-        # For MATH, AIME, and GSM-like benchmarks
-        return f"""{selected_examples}
+    return f"""{selected_examples}
 Now, look at this question:
 Q: {question}
 A: Let's think step by step..."""
@@ -409,10 +266,7 @@ You previously answered this question incorrectly. Reflect on why your answer wa
 """
 
 def generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key, api_provider, benchmark_name):
-    if benchmark_name == "SWE-bench":
-        meta_prompt_template_to_use = SWE_BENCH_META_PROMPT
-    else: # Default to MATH/general version, including AIME, GSM8K etc.
-        meta_prompt_template_to_use = MATH_META_PROMPT
+    meta_prompt_template_to_use = MATH_META_PROMPT
     
     current_meta_prompt = meta_prompt_template_to_use.format(question=question)
     
