@@ -59,14 +59,20 @@ def prepare_dataset(dataset_name, config):
         
         split_type = aime_params.get("split_type", "chronological") 
         max_test_samples = aime_params.get("max_test_samples", 200)
+        test_year_exact = aime_params.get("test_year_exact") 
         
         if split_type == "chronological":
-            test_years_start = aime_params.get("test_years_start", 2018)
-            test_df = df[df["Year"] >= test_years_start].copy()
-            print(f"AIME dataset: Total instances = {len(df)}, Chronological split from {test_years_start}, Test instances before sampling = {len(test_df)}")
+            if test_year_exact:
+                test_df = df[df["Year"] == test_year_exact].copy()
+                print(f"AIME dataset: Total instances = {len(df)}, Filtered for exact year {test_year_exact}, Test instances before sampling = {len(test_df)}")
+            else:
+                test_years_start = aime_params.get("test_years_start", 2018)
+                test_df = df[df["Year"] >= test_years_start].copy()
+                print(f"AIME dataset: Total instances = {len(df)}, Chronological split from {test_years_start}, Test instances before sampling = {len(test_df)}")
 
             if len(test_df) == 0:
-                print(f"[Warning] AIME: No instances from year {test_years_start}+. Using last {max_test_samples} instances.")
+                fallback_message = f"year {test_year_exact}" if test_year_exact else f"{test_years_start}+"
+                print(f"[Warning] AIME: No instances from {fallback_message}. Using last {max_test_samples} instances from all years.")
                 test_df = df.nlargest(max_test_samples, 'Year') 
                 if len(test_df) == 0: raise ValueError("AIME dataset empty after fallback.")
             

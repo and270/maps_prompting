@@ -57,7 +57,8 @@
         "hf_id": "gneubig/aime-1983-2024",
         "evaluation_type": "exact_string_match",
         "data_file": "AIME_Dataset_1983_2024.csv",
-        "max_test_samples": 100
+        "max_test_samples": 100,
+        "test_year_exact": 2024
     },
 
     "test_types": {
