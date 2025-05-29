@@ -39,7 +39,7 @@ def prepare_dataset(dataset_name, config):
             print("[Warning] MATH dataset is missing 'level' or 'type' columns. Disaggregated analysis might be affected.")
         # Use max_test_samples from MATH_params or default to 200
         sample_size = min(len(df), math_params.get("max_test_samples", 200))
-        sample = df.sample(n=sample_size, random_state=42)
+        sample = df.sample(n=sample_size)
         print(f"Dataset {dataset_name} loaded from {hf_id_math}. Sample size: {len(sample)}.")
 
     elif dataset_name == "AIME":
@@ -59,7 +59,7 @@ def prepare_dataset(dataset_name, config):
         
         split_type = aime_params.get("split_type", "chronological") 
         max_test_samples = aime_params.get("max_test_samples", 200)
-        test_year_exact = aime_params.get("test_year_exact") 
+        test_year_exact = aime_params.get("test_year_exact")
         
         if split_type == "chronological":
             if test_year_exact:
@@ -76,10 +76,10 @@ def prepare_dataset(dataset_name, config):
                 test_df = df.nlargest(max_test_samples, 'Year') 
                 if len(test_df) == 0: raise ValueError("AIME dataset empty after fallback.")
             
-            sample = test_df.sample(n=min(len(test_df), max_test_samples), random_state=42)
+            sample = test_df.sample(n=min(len(test_df), max_test_samples))
             print(f"AIME dataset: Sampled {len(sample)} test instances. Year range: {sample['Year'].min()}-{sample['Year'].max() if not sample.empty else 'N/A'}")
         elif split_type == "random":
-            sample = df.sample(n=min(len(df), max_test_samples), random_state=42)
+            sample = df.sample(n=min(len(df), max_test_samples))
             print(f"Dataset {dataset_name} random sample size: {len(sample)}.")
         else: 
             sample = df.copy() 
@@ -88,7 +88,7 @@ def prepare_dataset(dataset_name, config):
     elif dataset_name in config.get("gsm_types", []) or dataset_name == "main": # GSM-like
         ds = load_dataset("apple/GSM-Symbolic", dataset_name)
         df = pd.DataFrame(ds["test"])
-        sample = df.groupby("original_id").sample(n=1, random_state=42)
+        sample = df.groupby("original_id").sample(n=1)
         print(f"Dataset {dataset_name} (GSM-Symbolic type) loaded. Size: {len(sample)}.")
 
     else:
