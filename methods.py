@@ -142,7 +142,6 @@ $N \equiv 9 \pmod{45}$.
 The final answer is 9
 """
 
-# Meta-prompt for generating reflection prompts for MATH-like problems
 META_PROMPT_TEMPLATE = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
 *   **Type of problem:** The Self-Reflection prompt should guide the model to solve the specific type of problem presented in the question.
