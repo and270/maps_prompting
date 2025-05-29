@@ -143,16 +143,12 @@ The final answer is 9
 """
 
 # Meta-prompt for generating reflection prompts for MATH-like problems
-MATH_META_PROMPT = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
-
+META_PROMPT_TEMPLATE = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
-
 *   **Type of problem:** The Self-Reflection prompt should guide the model to solve the specific type of problem presented in the question.
 *   **Common mistakes:** The Self-Reflection prompt should guide the model to identify the common mistakes that are made when solving this type of problem.
 *   **Complexity of the problem:** The Self-Reflection prompt should guide the model to try to understand the complexity of the problem, if more steps arte needed to solve it.
-
 Here is the original Self-Reflection template that you should adapt:
-
 --- Beginning of the template ---
 You are an expert in <PROBLEM_AREA>.
 You have incorrectly answered the following question.
@@ -181,11 +177,8 @@ Advice:
 Solution:
 <the correct reasoning and answer to the example question>
 --- End of the template ---
-
 Now, adapt the above template for the following question:
-
 Question: {question}
-
 Generate the adapted Self-Reflection prompt (remember, you need to create a similar example question on complexity to the question received (NOT THE SAME ONE), a wrong answer to it and the correct answer):
 """
 
@@ -266,9 +259,8 @@ You previously answered this question incorrectly. Reflect on why your answer wa
 """
 
 def generate_auto_reflection_auto_adapt_prompt(question, previous_incorrect_answers, auto_prompt_model, api_key, api_provider, benchmark_name):
-    meta_prompt_template_to_use = MATH_META_PROMPT
     
-    current_meta_prompt = meta_prompt_template_to_use.format(question=question)
+    current_meta_prompt = META_PROMPT_TEMPLATE.format(question=question)
     
     adapted_reflection_prompt = query_model(
         api_key=api_key,
