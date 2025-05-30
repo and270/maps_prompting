@@ -385,75 +385,96 @@ def extract_answer_gsm_format(response):
 
 def extract_answer_math(response_text):
     """
-    Extracts the content from the last \\boxed{...} block in the response text
-    and applies basic LaTeX normalization.
+    Extracts the content from the last \\boxed{...} block in the response text,
+    handles common natural language phrases, and applies basic LaTeX normalization.
     """
     try:
         if response_text is None:
             return None
         
-        matches = re.findall(r"\\boxed{(.*?)}", response_text)
-        if not matches:
-            # Fallback: If no \boxed{}, try to find the last line that might contain a numerical answer or simple expression.
-            # This is a heuristic and might need refinement.
-            # Look for lines that are not part of "Let's think step by step" or "The final answer is"
-            # and seem to contain typical answer patterns.
+        boxed_matches = re.findall(r"\\boxed{(.*)}", response_text) 
+        if not boxed_matches:
+             boxed_matches = re.findall(r"\\boxed{(.*?)}", response_text)
+
+        extracted_text = ""
+        if boxed_matches:
+            extracted_text = boxed_matches[-1]
+        else:
             lines = response_text.strip().split('\n')
-            potential_answer_line = ""
             for line in reversed(lines):
                 clean_line = line.strip()
-                if clean_line and not clean_line.startswith("Let's think step by step") and not clean_line.lower().startswith("the final answer is"):
-                    # Heuristic: if it contains numbers and/or some math symbols, consider it.
-                    if re.search(r'[\d\.\/\*\-\+\(\)pi=sqrt]', clean_line) or re.search(r'\\[a-zA-Z]+', clean_line) :
-                        potential_answer_line = clean_line
-                        break # Take the first such line from the bottom
-            if not potential_answer_line:
-                return None # No suitable fallback line found
-            extracted_text = potential_answer_line
-        else:
-            extracted_text = matches[-1]
+                temp_line = clean_line.lower()
+                common_prefixes = [
+                    "the final answer is", "the answer is", "final answer:", "answer:", "solution:",
+                    "so, the answer is", "thus, the answer is", "therefore, the answer is"
+                ]
+                for prefix in common_prefixes:
+                    if temp_line.startswith(prefix):
+                        temp_line = temp_line[len(prefix):].lstrip(":\s") 
+                        clean_line = clean_line[len(prefix):].lstrip(":\s")
+                        break
+                
+                if clean_line and not temp_line.startswith("let's think step by step"):
+                    if (re.search(r'[\d./*\-+()\[\]ooPIsqrt]', clean_line, re.IGNORECASE) or
+                        re.search(r'\\[a-zA-Z]+', clean_line) or
+                        re.search(r'(?:\(|\[)-?oo|infinity', clean_line, re.IGNORECASE)): 
+                        extracted_text = clean_line
+                        break 
+            if not extracted_text: 
+                if len(response_text.split()) < 15 and (re.search(r'[\d./*\-+()\[\]ooPIsqrt]', response_text, re.IGNORECASE) or re.search(r'\\[a-zA-Z]+', response_text)):
+                    extracted_text = response_text 
+                else:
+                    return None
 
-        # Basic LaTeX Normalizations
-        # Remove \text{...}, \mathrm{...} if they wrap the whole expression or are simple
+        extracted_text = extracted_text.strip()
+        
+        phrases_to_strip_at_start = [
+            "The final answer is", "The answer is", "My answer is", "So the answer is", "It is", "Final Answer:", "Answer:", "Solution:"
+        ]
+        for phrase in phrases_to_strip_at_start:
+            if extracted_text.lower().startswith(phrase.lower()):
+                extracted_text = extracted_text[len(phrase):].lstrip(":\s")
+
+        if extracted_text.endswith("."):
+            if not re.search(r"\d\.$", extracted_text): 
+                 extracted_text = extracted_text[:-1]
+        
+        extracted_text = extracted_text.strip(".,:;!") 
+
         extracted_text = re.sub(r"\\text{\s*(.*?)\s*}", r"\1", extracted_text)
         extracted_text = re.sub(r"\\mathrm{\s*(.*?)\s*}", r"\1", extracted_text)
 
-        # Spacing commands
-        extracted_text = extracted_text.replace(r"\,", "")
-        extracted_text = extracted_text.replace(r"\!", "")
-        extracted_text = extracted_text.replace(r"\quad", " ")
-        extracted_text = extracted_text.replace(r"\qquad", "  ")
+        extracted_text = re.sub(r"\\left\(", r"(", extracted_text)
+        extracted_text = re.sub(r"\\right\)", r")", extracted_text)
+        extracted_text = re.sub(r"\\left\[", r"[", extracted_text)
+        extracted_text = re.sub(r"\\right\]", r"]", extracted_text)
+        extracted_text = re.sub(r"\\left\{", r"{", extracted_text) 
+        extracted_text = re.sub(r"\\right\}", r"}", extracted_text)
+
+        spacing_cmds = [r"\\,", r"\\!", r"\\s", r"\\quad", r"\\qquad", r"~_*"] # Corrected \s to r"\\s"
+        for cmd in spacing_cmds:
+            extracted_text = extracted_text.replace(cmd, "")
         
-        # Common symbols and functions
+        extracted_text = extracted_text.strip() 
+
         extracted_text = extracted_text.replace(r"\pi", "pi")
-        # More robust \frac replacement
+        extracted_text = extracted_text.replace(r"\infty", "oo") 
+
         extracted_text = re.sub(r"\\frac\s*{\s*(.*?)\s*}\s*{\s*(.*?)\s*}", r"(\1)/(\2)", extracted_text)
         extracted_text = re.sub(r"\\sqrt\s*{\s*(.*?)\s*}", r"sqrt(\1)", extracted_text)
         extracted_text = extracted_text.replace(r"\cdot", "*")
         extracted_text = extracted_text.replace(r"\times", "*")
-        extracted_text = extracted_text.replace(r"^{\circ}", "") # remove degree symbol
+        extracted_text = extracted_text.replace(r"^{\circ}", "") 
+        extracted_text = extracted_text.replace(r"\pm", "+-") 
 
-        # Remove unnecessary outer braces: e.g., {{expr}} -> {expr}
-        # This can be tricky; a simple pass for now.
         if extracted_text.startswith("{") and extracted_text.endswith("}"):
-            # Check if braces are balanced and truly just wrapping
-            temp_text = extracted_text[1:-1]
-            open_braces = 0
-            balanced = True
-            for char in temp_text:
-                if char == '{':
-                    open_braces += 1
-                elif char == '}':
-                    open_braces -= 1
-                if open_braces < 0: # Closing brace before matching open
-                    balanced = False
-                    break
-            if balanced and open_braces == 0 : # Ensure all internal braces are matched
-                 extracted_text = temp_text
+            if not (re.search(r",", extracted_text[1:-1]) or re.search(r"\|", extracted_text[1:-1])):
+                extracted_text = extracted_text[1:-1]
         
-        # Remove dollar signs if they are just wrapping the expression
         if extracted_text.startswith("$") and extracted_text.endswith("$"):
-            extracted_text = extracted_text[1:-1]
+            extracted_text = extracted_text[1:-1].strip()
+        if extracted_text.startswith("$$") and extracted_text.endswith("$$"):
+            extracted_text = extracted_text[2:-2].strip()
 
         return extracted_text.strip()
 
