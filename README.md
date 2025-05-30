@@ -108,6 +108,7 @@ The script `run_test.py` is primarily driven by `config.json`. This file allows 
         "gpt-4o-mini":{
             "name": "gpt-4o-mini-2024-07-18",
             "provider": "openai",
+            "api_key_env": "OPENAI_API_KEY",
             "supports_sampling_params": true
         }
         // ... other models

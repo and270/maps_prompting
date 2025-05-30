@@ -5,41 +5,37 @@
         "gpt-4o":{
             "name": "gpt-4o-2024-11-20",
             "provider": "openai",
+            "api_key_env": "OPENAI_API_KEY",
             "supports_sampling_params": true
         },
         "gpt-4o-mini":{
             "name": "gpt-4o-mini-2024-07-18",
             "provider": "openai",
+            "api_key_env": "OPENAI_API_KEY",
             "supports_sampling_params": true
         },
         "llama-3.1-70b-instruct":{
             "name": "meta-llama/llama-3.1-70b-instruct",
             "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
         },
         "llama-3.1-8b-instruct":{
             "name": "meta-llama/llama-3.1-8b-instruct",
             "provider": "openrouter",
-            "supports_sampling_params": true
-        },
-        "deepseek-v3":{
-            "name": "deepseek/deepseek-chat",
-            "provider": "openrouter",
-            "supports_sampling_params": true
-        },
-        "mistral-small":{
-            "name": "mistralai/mistral-small-24b-instruct-2501",
-            "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
         },
         "gemma2-27b":{
             "name": "google/gemma-2-27b-it",
             "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
         },
         "gemma2-9b":{
             "name": "google/gemma-2-9b-it",
             "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
         }   
     },

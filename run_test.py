@@ -92,8 +92,18 @@ def prepare_dataset(dataset_name, config):
         sample = df.groupby("original_id").sample(n=1)
         print(f"Dataset {dataset_name} (GSM-Symbolic type) loaded. Size: {len(sample)}.")
 
-    else:
-        raise ValueError(f"Unsupported dataset_name: '{dataset_name}'.")
+    else:  # Default to GSM-like from "apple/GSM-Symbolic" if not MATH or AIME
+        print(f"Assuming '{dataset_name}' is a GSM-Symbolic configuration (e.g., main, p1, p2). Loading from 'apple/GSM-Symbolic'.")
+        try:
+            # dataset_name must be a valid configuration for "apple/GSM-Symbolic"
+            # e.g., "main", "p1", "p2"
+            ds = load_dataset("apple/GSM-Symbolic", dataset_name)
+            df = pd.DataFrame(ds["test"])
+            # GSM-Symbolic datasets ("main", "p1", "p2") are expected to have "original_id"
+            sample = df.groupby("original_id").sample(n=1)
+            print(f"Dataset {dataset_name} (GSM-Symbolic type) loaded. Sample size: {len(sample)}.")
+        except Exception as e:
+            raise ValueError(f"Failed to load '{dataset_name}' as a GSM-Symbolic configuration from 'apple/GSM-Symbolic'. Ensure '{dataset_name}' is a valid configuration (e.g., 'main', 'p1', 'p2') and the dataset is accessible. Original error: {e}")
     return sample
 
 # --- Helper functions for MATH evaluation (remain unchanged) ---
@@ -447,4 +457,4 @@ def main():
         else: print("No tasks generated to run.")
     if run_analysis_flag: analyze_results()
 
-if __name__ == "__main__": main
+if __name__ == "__main__": main()
