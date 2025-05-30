@@ -312,34 +312,68 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                         reflection_data_multi_layer__method.append({"layer": 0, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": cot_full_response, "auto_prompt_used": None})
                     else:
                         print("\n--- Multi-Layer Self-Reflection ---")
-                        current_ans_ext = cot_response
-                        current_full_response = cot_full_response 
-                        previous_incorrect_full_responses = [current_full_response] 
-                        
+                        current_ans_ext = cot_response # Extracted answer from the last attempt (initially CoT)
+                        previous_extracted_incorrect_answers = [cot_response] # List of EXTRACTED incorrect answers
+
                         for layer in range(config["max_reflection_layers"]):
                             print(f"\n--- Layer {layer+1} ---")
-                            auto_prompt_model_config_key = config.get("auto_prompt_model", "same") 
+                            auto_prompt_model_config_key = config.get("auto_prompt_model", "same")
+                            
+                            # Determine the model and API details for the meta-prompting (auto_prompt_model)
+                            auto_prompt_model_name_to_use: str
+                            auto_prompt_api_key_to_use: str
+                            auto_prompt_api_provider_to_use: str
+                            auto_prompt_supports_sampling_to_use = True
+
+                            if auto_prompt_model_config_key == "same" or auto_prompt_model_config_key not in config.get("models", {}):
+                                if auto_prompt_model_config_key != "same":
+                                    print(f"[Warning] Auto-prompt model key '{auto_prompt_model_config_key}' not found in config.json. Falling back to main model: {model}")
+                                auto_prompt_model_name_to_use = model # Main model name
+                                auto_prompt_api_key_to_use = api_key # Main model API key
+                                auto_prompt_api_provider_to_use = api_provider # Main model API provider
+                                # Find the main model in config to get its supports_sampling_params
+                                for model_details_val in config.get("models", {}).values():
+                                    if model_details_val.get("name") == model:
+                                        auto_prompt_supports_sampling_to_use = model_details_val.get("supports_sampling_params", True)
+                                        break
+                            else:
+                                specific_model_details = config["models"][auto_prompt_model_config_key]
+                                auto_prompt_model_name_to_use = specific_model_details["name"]
+                                auto_prompt_api_provider_to_use = specific_model_details["provider"]
+                                auto_prompt_supports_sampling_to_use = specific_model_details.get("supports_sampling_params", True)
+                                api_key_env_var = specific_model_details.get("api_key_env")
+                                if not api_key_env_var:
+                                    print(f"[Error] 'api_key_env' not defined for auto-prompt model '{auto_prompt_model_config_key}'. Cannot use for meta-prompting. Halting reflection for this instance.")
+                                    break # Break from reflection layers loop for this instance
+                                fetched_api_key = os.getenv(api_key_env_var)
+                                if not fetched_api_key:
+                                    print(f"[Error] API key not found via env var '{api_key_env_var}' for auto-prompt model '{auto_prompt_model_config_key}'. Cannot use for meta-prompting. Halting reflection for this instance.")
+                                    break # Break from reflection layers loop for this instance
+                                auto_prompt_api_key_to_use = fetched_api_key
+
+                            print(f"[DEBUG] Multi-Layer Reflection Layer {layer+1}: Generating reflection prompt with {len(previous_extracted_incorrect_answers)} previous incorrect extracted answer(s).")
 
                             reflection_instructions_prompt = generate_auto_reflection_auto_adapt_prompt(
                                 question,
-                                previous_incorrect_full_responses, 
-                                auto_prompt_model_config_key,
-                                model,          
-                                api_key,         
-                                api_provider,    
-                                benchmark_name,
-                                config          
+                                previous_extracted_incorrect_answers, # Pass extracted answers
+                                auto_prompt_model_name_to_use,          
+                                auto_prompt_api_key_to_use,         
+                                auto_prompt_api_provider_to_use,    
+                                auto_prompt_supports_sampling_to_use
                             )
 
                             if not reflection_instructions_prompt:
                                 print(f"[Warning] Failed to generate reflection instructions for layer {layer+1}. Skipping layer.")
                                 break
 
+                            # Log the generated instructions for reflection
+                            print(f"[DEBUG] Reflection Instructions Prompt for Layer {layer+1} (last 700 chars):\n'''{get_last_n(reflection_instructions_prompt, 700)}'''")
+
                             reflection_actual_text = query_model(
-                                api_key, 
-                                reflection_instructions_prompt, 
-                                model, 
-                                supports_sampling_params=supports_sampling_params, 
+                                api_key,
+                                reflection_instructions_prompt,
+                                model,
+                                supports_sampling_params=supports_sampling_params,
                                 api_provider=api_provider
                             )
                             print(f"Reflection Actual Text (last 300 chars): {get_last_n(reflection_actual_text, 300)}")
@@ -350,35 +384,46 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
                             reanswer_prompt = generate_reanswer_prompt(question, current_ans_ext, reflection_actual_text)
                             reanswer_full_response = query_model(
-                                api_key, 
-                                reanswer_prompt, 
-                                model, 
-                                supports_sampling_params=supports_sampling_params, 
+                                api_key,
+                                reanswer_prompt,
+                                model,
+                                supports_sampling_params=supports_sampling_params,
                                 api_provider=api_provider
                             )
 
                             if not reanswer_full_response:
                                 print(f"[Warning] Main model failed to generate re-answer for layer {layer+1}. Skipping layer.")
                                 break
-                            
-                            current_score = evaluate_response(reanswer_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
-                            current_ans_ext = extract_answer_math(reanswer_full_response) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_response)
-                            current_full_response = reanswer_full_response 
 
-                            print(f"Re-answer Full Response (last 300 chars): {get_last_n(current_full_response, 300)}")
-                            print(f"Re-answer Extracted: {str(current_ans_ext)}")
+                            current_score = evaluate_response(reanswer_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
+                            # Use a new variable for the newly extracted answer to avoid confusion with current_ans_ext from the *previous* step
+                            new_extracted_ans = extract_answer_math(reanswer_full_response) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_response)
+
+                            print(f"Re-answer Full Response (last 300 chars): {get_last_n(reanswer_full_response, 300)}")
+                            print(f"Re-answer Extracted: {str(new_extracted_ans)}")
                             print(f"Ideal Correct Answer (for comparison): {processed_golden_answer_for_log}")
                             print(f"Score: {current_score}")
 
                             reflection_data_multi_layer__method.append({
-                                "layer": layer + 1, 
-                                "score": current_score, 
-                                "response": current_ans_ext, 
+                                "layer": layer + 1,
+                                "score": current_score,
+                                "response": new_extracted_ans, # Store the new extracted answer
                                 "reflection_prompt": reflection_instructions_prompt,
-                                "full_response": reflection_actual_text,
-                                "reanswer_full_response": current_full_response,
+                                "full_response": reflection_actual_text, # The reflection itself
+                                "reanswer_full_response": reanswer_full_response, # The new answer attempt
                                 "auto_prompt_used": "auto_adapt"
                             })
+
+                            if current_score == 1:
+                                print(f"Correct answer achieved at Multi-Layer Reflection Layer {layer+1}. Stopping reflection for this instance.")
+                                break # Exit the reflection loop for this instance
+
+                            # Prepare for the next layer if this one was incorrect and it's not the last layer
+                            if layer < config["max_reflection_layers"] - 1:
+                                previous_extracted_incorrect_answers.append(new_extracted_ans) # Add the EXTRACTED result of the failed re-answer
+                                current_ans_ext = new_extracted_ans # Update current_ans_ext for the next iteration's reanswer_prompt
+                            elif current_score == 0: # Still incorrect and it was the last layer
+                                print(f"Multi-Layer Reflection: Max layers ({config['max_reflection_layers']}) reached, answer still incorrect for instance {current_instance_id}.")
                 
                 row_result_dict = {
                     "dataset": dataset_name, "benchmark_name": benchmark_name, "model": model, 
