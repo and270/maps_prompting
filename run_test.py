@@ -11,6 +11,7 @@ import math # Added for MATH evaluation
 import sympy # Added for MATH evaluation
 
 # Import query_model and your prompt-generation helpers
+from chatbot import load_config
 from llms_api import query_model
 from methods import (
     extract_answer_gsm_format,
@@ -381,6 +382,37 @@ def analyze_results(results_dir="results"):
             else: print("[Info] No MATH data with 'math_level'/'math_type' for disaggregated analysis.")
         else: print("[Info] 'math_level' or 'math_type' cols not in main df. Skipping MATH disagg. analysis.")
     return summary_df
+
+def worker(task_args):
+    """
+    Worker function to be executed by the ThreadPoolExecutor.
+    Unpacks task arguments, runs the benchmark, and saves the results.
+    """
+    dataset_name, benchmark_name_for_task, model_info, sample, _, config_from_task = task_args
+    
+    api_key = os.getenv(model_info["api_key_env"])
+    if not api_key:
+        print(f"[Error] API key not found for model {model_info['name']} using env var {model_info['api_key_env']}. Skipping.")
+        return
+
+    results_df = run_benchmark(
+        sample=sample,
+        api_key=api_key,
+        config=config_from_task,
+        model=model_info["name"],
+        dataset_name=dataset_name,
+        benchmark_name=benchmark_name_for_task,
+        api_provider=model_info["api_provider"],
+        supports_sampling_params=model_info.get("supports_sampling_params", True)
+    )
+    
+    if not results_df.empty:
+        results_dir = config_from_task.get("results_dir", "results")
+        model_name_sanitized = re.sub(r'[^a-zA-Z0-9_-]', '_', model_info["name"]) # Sanitize model name for filename
+        filename = os.path.join(results_dir, f"{dataset_name}_{benchmark_name_for_task}_{model_name_sanitized}_results.csv")
+        save_results(results_df, filename)
+    else:
+        print(f"No results to save for {dataset_name} - {benchmark_name_for_task} - {model_info['name']}")
 
 def main():
     from dotenv import load_dotenv
