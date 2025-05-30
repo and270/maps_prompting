@@ -57,8 +57,8 @@ This framework now supports evaluation on:
 
 1.  **Clone** this repository:
     ```bash
-    git clone https://github.com/your-username/your-repo-name.git # Replace with actual repo URL
-    cd your-repo-name
+    git clone https://github.com/and270/maps_prompting.git
+    cd maps_prompting
     ```
 
 2.  **Create and activate a virtual environment** (recommended):
