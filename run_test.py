@@ -412,7 +412,7 @@ def worker(task_args):
         model=model_info["name"],
         dataset_name=dataset_name,
         benchmark_name=benchmark_name_for_task,
-        api_provider=model_info["api_provider"],
+        api_provider=model_info["provider"],
         supports_sampling_params=model_info.get("supports_sampling_params", True)
     )
     
