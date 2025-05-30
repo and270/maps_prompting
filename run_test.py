@@ -213,7 +213,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                 cot_full_response, cot_response, cot_score = None, None, 0
                 
                 if config["test_types"]["run_base"]:
-                    base_full_response = query_model(api_key, question, model, supports_sampling_params)
+                    base_full_response = query_model(api_key, question, model, 
+                                                     supports_sampling_params=supports_sampling_params, 
+                                                     api_provider=api_provider)
                     if benchmark_name == "MATH": base_response = extract_answer_math(base_full_response)
                     else: base_response = extract_answer_gsm_format(base_full_response)
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -221,7 +223,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
                 if any(config["test_types"].get(k) for k in ["run_cot", "run_traditional_self_reflection", "run_multi_layer_self_reflection"]):
                     cot_prompt = generate_cot_prompt(question, benchmark_name)
-                    cot_full_response = query_model(api_key, cot_prompt, model, supports_sampling_params)
+                    cot_full_response = query_model(api_key, cot_prompt, model, 
+                                                    supports_sampling_params=supports_sampling_params, 
+                                                    api_provider=api_provider)
                     if benchmark_name == "MATH": cot_response = extract_answer_math(cot_full_response)
                     else: cot_response = extract_answer_gsm_format(cot_full_response)
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -230,9 +234,13 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                 reflection_data_traditional_method = []
                 if config["test_types"]["run_traditional_self_reflection"] and cot_score == 0:
                     trad_reflect_prompt = generate_auto_reflection_traditional_prompt(question, cot_full_response)
-                    trad_reflect_resp = query_model(api_key, trad_reflect_prompt, model, supports_sampling_params)
+                    trad_reflect_resp = query_model(api_key, trad_reflect_prompt, model, 
+                                                    supports_sampling_params=supports_sampling_params, 
+                                                    api_provider=api_provider)
                     trad_reanswer_prompt = generate_reanswer_prompt(question, cot_response, trad_reflect_resp)
-                    trad_reanswer_resp = query_model(api_key, trad_reanswer_prompt, model, supports_sampling_params)
+                    trad_reanswer_resp = query_model(api_key, trad_reanswer_prompt, model, 
+                                                   supports_sampling_params=supports_sampling_params, 
+                                                   api_provider=api_provider)
                     trad_score = evaluate_response(trad_reanswer_resp, expected_answer_val, benchmark_name, config, current_instance_id)
                     trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
                     reflection_data_traditional_method.append({"layer": None, "score": trad_score, "response": trad_extracted, "reflection_prompt": trad_reflect_prompt, "full_response": trad_reflect_resp, "auto_prompt_used": "traditional"})
@@ -242,23 +250,82 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                 reflection_data_multi_layer__method = []
                 if config["test_types"]["run_multi_layer_self_reflection"]:
                     if cot_score == 1:
-                        reflection_data_multi_layer__method.append({"layer": 0, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": None, "auto_prompt_used": None})
+                        reflection_data_multi_layer__method.append({"layer": 0, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": cot_full_response, "auto_prompt_used": None})
                     else:
-                        cur_ans_ext, cur_full_resp, cur_score = cot_response, cot_full_response, cot_score
+                        current_ans_ext = cot_response
+                        current_full_response = cot_full_response # This is the first "incorrect" full response
+                        previous_incorrect_full_responses = [current_full_response] # List to store all previous full incorrect responses
+                        
                         for layer in range(config["max_reflection_layers"]):
-                            adapt_prompt = generate_auto_reflection_auto_adapt_prompt(question, cur_full_resp, config["auto_prompt_model"], api_key, api_provider, benchmark_name)
-                            reflect_resp = query_model(api_key, adapt_prompt, model, supports_sampling_params)
-                            reanswer_prompt = generate_reanswer_prompt(question, cur_ans_ext, reflect_resp)
-                            reanswer_full_resp = query_model(api_key, reanswer_prompt, model, supports_sampling_params)
-                            cur_score = evaluate_response(reanswer_full_resp, expected_answer_val, benchmark_name, config, current_instance_id)
-                            cur_ans_ext = extract_answer_math(reanswer_full_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_resp)
+                            auto_prompt_model_config_key = config.get("auto_prompt_model", "same") # e.g., "same", "gpt-4o"
+
+                            # Generate the adaptive reflection prompt (instructions for reflection)
+                            # This prompt is generated by a model (main or specified) based on META_PROMPT_TEMPLATE
+                            reflection_instructions_prompt = generate_auto_reflection_auto_adapt_prompt(
+                                question,
+                                previous_incorrect_full_responses, # Pass the list of full previous incorrect responses
+                                auto_prompt_model_config_key,
+                                model,           # Main model name
+                                api_key,         # Main model API key
+                                api_provider,    # Main model API provider
+                                benchmark_name,
+                                config           # Full config data for lookups
+                            )
+
+                            if not reflection_instructions_prompt:
+                                print(f"[Warning] Failed to generate reflection instructions for layer {layer+1}. Skipping layer.")
+                                break
+
+                            # The main model performs the reflection using the generated instructions
+                            reflection_actual_text = query_model(
+                                api_key, 
+                                reflection_instructions_prompt, 
+                                model, 
+                                supports_sampling_params=supports_sampling_params, 
+                                api_provider=api_provider
+                            )
+
+                            if not reflection_actual_text:
+                                print(f"[Warning] Main model failed to generate reflection text for layer {layer+1}. Skipping layer.")
+                                # current_full_response remains the same as last iteration
+                                # previous_incorrect_full_responses.append(current_full_response) # Or decide not to add if reflection failed severely
+                                break
+
+                            reanswer_prompt = generate_reanswer_prompt(question, current_ans_ext, reflection_actual_text)
+                            reanswer_full_response = query_model(
+                                api_key, 
+                                reanswer_prompt, 
+                                model, 
+                                supports_sampling_params=supports_sampling_params, 
+                                api_provider=api_provider
+                            )
+
+                            if not reanswer_full_response:
+                                print(f"[Warning] Main model failed to generate re-answer for layer {layer+1}. Skipping layer.")
+                                # current_full_response = reflection_actual_text # The reflection text is the last valid response
+                                # previous_incorrect_full_responses.append(current_full_response)
+                                break
+                            
+                            current_score = evaluate_response(reanswer_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
+                            current_ans_ext = extract_answer_math(reanswer_full_response) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_response)
+                            current_full_response = reanswer_full_response # Update with the latest full response
+
                             reflection_data_multi_layer__method.append({
-                                "layer": layer + 1, "score": cur_score, "response": cur_ans_ext, 
-                                "reflection_prompt": adapt_prompt, "full_response": reflect_resp, 
-                                "reanswer_full_response": reanswer_full_resp, "auto_prompt_used": "auto_adapt"})
-                            print(f"Reflect L{layer+1} Extracted: {str(cur_ans_ext)[:100]}... Score: {cur_score}")
-                            if cur_score == 1: break
-                            cur_full_resp = reanswer_full_resp
+                                "layer": layer + 1, 
+                                "score": current_score, 
+                                "response": current_ans_ext, 
+                                "reflection_prompt": reflection_instructions_prompt, # The instructions used for reflection
+                                "full_response": reflection_actual_text,         # The actual reflection text generated by the main model
+                                "reanswer_full_response": current_full_response,    # The full re-answer after reflection
+                                "auto_prompt_used": "auto_adapt" # Indicates this reflection path was taken
+                            })
+                            print(f"Reflect L{layer+1} Extracted: {str(current_ans_ext)[:100]}... Score: {current_score}")
+                            
+                            if current_score == 1: 
+                                break
+                            
+                            # Add the latest incorrect full response to the list for the next iteration
+                            previous_incorrect_full_responses.append(current_full_response)
                 
                 row_result_dict = {
                     "dataset": dataset_name, "benchmark_name": benchmark_name, "model": model, 
