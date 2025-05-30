@@ -212,20 +212,28 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
     for idx, row in sample.iterrows():
         question, expected_answer_val = "", None
         math_level, math_type = None, None 
+        processed_golden_answer_for_log = None # For logging next to extracted answers
 
         if benchmark_name == "gsm8-std":
             question, expected_answer_val = row["original_question"], extract_answer_gsm_format(row["original_answer"])
+            processed_golden_answer_for_log = str(expected_answer_val) # Already processed
         elif benchmark_name == "gsm-symbolic":
             question, expected_answer_val = row["question"], extract_answer_gsm_format(row["answer"])
+            processed_golden_answer_for_log = str(expected_answer_val) # Already processed
         elif benchmark_name == "MATH":
             question, expected_answer_val = row["problem"], row["solution"]
+            # expected_answer_val is raw, extract it for logging consistency with evaluate_response
+            processed_golden_answer_for_log = extract_answer_math(str(expected_answer_val))
             math_level = row.get("level") 
             math_type = row.get("type")   
         elif benchmark_name == "AIME":
             question, expected_answer_val = row["Problem"], str(row["Answer"])
+            # expected_answer_val is already the clean answer string for AIME
+            processed_golden_answer_for_log = str(expected_answer_val).strip()
         else:
             print(f"[Warning] Unknown benchmark '{benchmark_name}' for row {idx}.")
             question, expected_answer_val = row.get("question", "N/A"), None
+            processed_golden_answer_for_log = str(expected_answer_val)
         
         current_instance_id = row.get("instance_id", str(idx)) # Use actual instance_id or fallback to DataFrame index
         max_retries = 3
@@ -253,6 +261,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
                     print(f"Full Response (last 300 chars): {get_last_n(base_full_response, 300)}")
                     print(f"Extracted Answer: {str(base_response)}")
+                    print(f"Ideal Correct Answer (for comparison): {processed_golden_answer_for_log}")
                     print(f"Score: {base_score}")
 
                 if any(config["test_types"].get(k) for k in ["run_cot", "run_traditional_self_reflection", "run_multi_layer_self_reflection"]):
@@ -266,6 +275,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
                     print(f"Full Response (last 300 chars): {get_last_n(cot_full_response, 300)}")
                     print(f"Extracted Answer: {str(cot_response)}")
+                    print(f"Ideal Correct Answer (for comparison): {processed_golden_answer_for_log}")
                     print(f"Score: {cot_score}")
 
                 reflection_data_traditional_method = []
@@ -286,6 +296,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                         trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
                         print(f"Re-answer Full Response (last 300 chars): {get_last_n(trad_reanswer_resp, 300)}")
                         print(f"Re-answer Extracted: {str(trad_extracted)}")
+                        print(f"Ideal Correct Answer (for comparison): {processed_golden_answer_for_log}")
                         print(f"Score: {trad_score}")
                         reflection_data_traditional_method.append({"layer": None, "score": trad_score, "response": trad_extracted, "reflection_prompt": trad_reflect_prompt, "full_response": trad_reflect_resp, "auto_prompt_used": "traditional"})
                     else: # cot_score == 1
@@ -356,6 +367,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
                             print(f"Re-answer Full Response (last 300 chars): {get_last_n(current_full_response, 300)}")
                             print(f"Re-answer Extracted: {str(current_ans_ext)}")
+                            print(f"Ideal Correct Answer (for comparison): {processed_golden_answer_for_log}")
                             print(f"Score: {current_score}")
 
                             reflection_data_multi_layer__method.append({
