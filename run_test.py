@@ -207,56 +207,75 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
         for attempt in range(max_retries):
             try:
                 print(f"\n--- Q_idx={idx} (Instance: {current_instance_id}), Attempt={attempt+1}/{max_retries}, Bench: {benchmark_name} ---")
-                # For brevity, actual expected answer not printed here, but available in expected_answer_val
+                print(f"Question: {question}")
+                print(f"Expected Answer: {expected_answer_val}")
 
                 base_full_response, base_response, base_score = None, None, 0
                 cot_full_response, cot_response, cot_score = None, None, 0
                 
                 if config["test_types"]["run_base"]:
+                    print("\n--- Running Base Model ---")
                     base_full_response = query_model(api_key, question, model, 
                                                      supports_sampling_params=supports_sampling_params, 
                                                      api_provider=api_provider)
                     if benchmark_name == "MATH": base_response = extract_answer_math(base_full_response)
                     else: base_response = extract_answer_gsm_format(base_full_response)
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
-                    print(f"Base Extracted: {str(base_response)[:100]}... Score: {base_score}")
+                    print(f"Base Full Response: {str(base_full_response)}")
+                    print(f"Base Extracted Answer: {str(base_response)}")
+                    print(f"Base Score: {base_score}")
 
                 if any(config["test_types"].get(k) for k in ["run_cot", "run_traditional_self_reflection", "run_multi_layer_self_reflection"]):
+                    print("\n--- Running CoT ---")
                     cot_prompt = generate_cot_prompt(question, benchmark_name)
+                    print(f"CoT Prompt: {cot_prompt}")
                     cot_full_response = query_model(api_key, cot_prompt, model, 
                                                     supports_sampling_params=supports_sampling_params, 
                                                     api_provider=api_provider)
                     if benchmark_name == "MATH": cot_response = extract_answer_math(cot_full_response)
                     else: cot_response = extract_answer_gsm_format(cot_full_response)
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
-                    print(f"CoT Extracted: {str(cot_response)[:100]}... Score: {cot_score}")
+                    print(f"CoT Full Response: {str(cot_full_response)}")
+                    print(f"CoT Extracted Answer: {str(cot_response)}")
+                    print(f"CoT Score: {cot_score}")
 
                 reflection_data_traditional_method = []
                 if config["test_types"]["run_traditional_self_reflection"] and cot_score == 0:
+                    print("\n--- Running Traditional Self-Reflection ---")
                     trad_reflect_prompt = generate_auto_reflection_traditional_prompt(question, cot_full_response)
+                    print(f"Traditional Reflection Prompt: {trad_reflect_prompt}")
                     trad_reflect_resp = query_model(api_key, trad_reflect_prompt, model, 
                                                     supports_sampling_params=supports_sampling_params, 
                                                     api_provider=api_provider)
+                    print(f"Traditional Reflection Response: {str(trad_reflect_resp)}")
                     trad_reanswer_prompt = generate_reanswer_prompt(question, cot_response, trad_reflect_resp)
+                    print(f"Traditional Re-answer Prompt: {trad_reanswer_prompt}")
                     trad_reanswer_resp = query_model(api_key, trad_reanswer_prompt, model, 
                                                    supports_sampling_params=supports_sampling_params, 
                                                    api_provider=api_provider)
                     trad_score = evaluate_response(trad_reanswer_resp, expected_answer_val, benchmark_name, config, current_instance_id)
                     trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
+                    print(f"Traditional Re-answer Full Response: {str(trad_reanswer_resp)}")
+                    print(f"Traditional Re-answer Extracted: {str(trad_extracted)}")
+                    print(f"Traditional Reflection Score: {trad_score}")
                     reflection_data_traditional_method.append({"layer": None, "score": trad_score, "response": trad_extracted, "reflection_prompt": trad_reflect_prompt, "full_response": trad_reflect_resp, "auto_prompt_used": "traditional"})
                 elif config["test_types"]["run_traditional_self_reflection"] and cot_score == 1:
+                     print("\n--- Traditional Self-Reflection (Skipped, CoT Correct) ---")
                      reflection_data_traditional_method.append({"layer": None, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": None, "auto_prompt_used": None})
 
                 reflection_data_multi_layer__method = []
                 if config["test_types"]["run_multi_layer_self_reflection"]:
                     if cot_score == 1:
+                        print("\n--- Multi-Layer Self-Reflection (Skipped, CoT Correct) ---")
                         reflection_data_multi_layer__method.append({"layer": 0, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": cot_full_response, "auto_prompt_used": None})
                     else:
+                        print("\n--- Running Multi-Layer Self-Reflection ---")
                         current_ans_ext = cot_response
                         current_full_response = cot_full_response # This is the first "incorrect" full response
                         previous_incorrect_full_responses = [current_full_response] # List to store all previous full incorrect responses
                         
                         for layer in range(config["max_reflection_layers"]):
+                            print(f"\n--- Multi-Layer Reflection: Layer {layer+1} ---")
                             auto_prompt_model_config_key = config.get("auto_prompt_model", "same") # e.g., "same", "gpt-4o"
 
                             # Generate the adaptive reflection prompt (instructions for reflection)
@@ -271,6 +290,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 benchmark_name,
                                 config           # Full config data for lookups
                             )
+                            print(f"Multi-Layer Reflection Instructions Prompt (Layer {layer+1}): {reflection_instructions_prompt}")
 
                             if not reflection_instructions_prompt:
                                 print(f"[Warning] Failed to generate reflection instructions for layer {layer+1}. Skipping layer.")
@@ -284,6 +304,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 supports_sampling_params=supports_sampling_params, 
                                 api_provider=api_provider
                             )
+                            print(f"Multi-Layer Reflection Actual Text (Layer {layer+1}): {str(reflection_actual_text)}")
 
                             if not reflection_actual_text:
                                 print(f"[Warning] Main model failed to generate reflection text for layer {layer+1}. Skipping layer.")
@@ -292,6 +313,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 break
 
                             reanswer_prompt = generate_reanswer_prompt(question, current_ans_ext, reflection_actual_text)
+                            print(f"Multi-Layer Re-answer Prompt (Layer {layer+1}): {reanswer_prompt}")
                             reanswer_full_response = query_model(
                                 api_key, 
                                 reanswer_prompt, 
@@ -309,6 +331,10 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                             current_score = evaluate_response(reanswer_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
                             current_ans_ext = extract_answer_math(reanswer_full_response) if benchmark_name == "MATH" else extract_answer_gsm_format(reanswer_full_response)
                             current_full_response = reanswer_full_response # Update with the latest full response
+
+                            print(f"Multi-Layer Re-answer Full Response (Layer {layer+1}): {str(current_full_response)}")
+                            print(f"Multi-Layer Re-answer Extracted (Layer {layer+1}): {str(current_ans_ext)}")
+                            print(f"Multi-Layer Reflection Score (Layer {layer+1}): {current_score}")
 
                             reflection_data_multi_layer__method.append({
                                 "layer": layer + 1, 
