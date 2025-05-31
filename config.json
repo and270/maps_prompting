@@ -1,6 +1,6 @@
 {
     "datasets": ["main", "p1", "p2", "MATH", "AIME"],
-    "gsm_types": ["gsm-symbolic", "gsm8-std", "MATH", "AIME"],
+    "gsm_types": ["gsm-symbolic", "gsm8-std"],
     "models": {
         "gpt-4o":{
             "name": "gpt-4o-2024-11-20",

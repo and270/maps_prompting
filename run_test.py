@@ -209,7 +209,8 @@ def evaluate_response(response_text, expected_answer_text, benchmark_name, confi
 
 def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, api_provider, supports_sampling_params):
     results = []
-    for idx, row in sample.iterrows():
+    total_questions_in_sample = len(sample)
+    for i, (idx, row) in enumerate(sample.iterrows()):
         question, expected_answer_val = "", None
         math_level, math_type = None, None 
         processed_golden_answer_for_log = None # For logging next to extracted answers
@@ -241,7 +242,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
         for attempt in range(max_retries):
             try:
-                print(f"\n--- Q_idx={idx} (Instance: {current_instance_id}), Attempt={attempt+1}/{max_retries}, Bench: {benchmark_name} ---")
+                print(f"\n--- Question {i+1}/{total_questions_in_sample} (Orig_idx: {idx}, Instance: {current_instance_id}), Attempt={attempt+1}/{max_retries}, Bench: {benchmark_name} ---")
                 print(f"Question: {question}")
                 print(f"Expected Golden Solution (raw): {expected_answer_val}")
 

@@ -394,9 +394,13 @@ def extract_answer_math(response_text):
 
         extracted_text = re.sub(r"\\left\(", r"(", extracted_text)
         extracted_text = re.sub(r"\\right\)", r")", extracted_text)
+        extracted_text = re.sub(r"\\\(", r"(", extracted_text)
+        extracted_text = re.sub(r"\\\)", r")", extracted_text)
         extracted_text = re.sub(r"\\left\[", r"[", extracted_text)
         extracted_text = re.sub(r"\\right\]", r"]", extracted_text)
-        extracted_text = re.sub(r"\\left\{", r"{", extracted_text) 
+        extracted_text = re.sub(r"\\\[", r"[", extracted_text)
+        extracted_text = re.sub(r"\\\]", r"]", extracted_text)
+        extracted_text = re.sub(r"\\left\{", r"{", extracted_text)
         extracted_text = re.sub(r"\\right\}", r"}", extracted_text)
 
         spacing_cmds = [r"\\,", r"\\!", r"\\s", r"\\quad", r"\\qquad", r"~_*"] # Corrected \s to r"\\s"
