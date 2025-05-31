@@ -448,8 +448,20 @@ def extract_answer_aime(response_text):
         # Find all numerical values (integers or simple decimals)
         numbers = re.findall(r"-?\d+\.?\d*", response_text)
         if numbers:
-            # Return the last numerical value found as a string
-            return numbers[-1]
+            # Get the last numerical value found
+            last_num_str = numbers[-1]
+            try:
+                # Attempt to convert to float
+                float_val = float(last_num_str)
+                # If it's an integer (e.g., 16.0), convert to int string "16"
+                if float_val.is_integer():
+                    return str(int(float_val))
+                else:
+                    # Otherwise, return the original float string (e.g., "16.5")
+                    return last_num_str
+            except ValueError:
+                # If conversion to float fails, return the original extracted string
+                return last_num_str
         else:
             return None
     except Exception as e:
