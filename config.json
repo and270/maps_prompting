@@ -50,11 +50,10 @@
         "max_test_samples": 100
     },
     "AIME_params": {
-        "hf_id": "gneubig/aime-1983-2024",
-        "evaluation_type": "exact_string_match",
-        "data_file": "AIME_Dataset_1983_2024.csv",
-        "max_test_samples": 100,
-        "test_year_exact": 2024
+        "hf_id": "opencompass/AIME2025",
+        "subset_name": "AIME2025-I",
+        "split_name": "test",
+        "evaluation_type": "exact_string_match"
     },
 
     "test_types": {

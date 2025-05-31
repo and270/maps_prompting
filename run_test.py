@@ -45,46 +45,24 @@ def prepare_dataset(dataset_name, config):
 
     elif dataset_name == "AIME":
         aime_params = config.get("AIME_params", {})
-        hf_id_aime = aime_params.get("hf_id", "gneubig/aime-1983-2024")
-        ds = load_dataset(hf_id_aime)
-        if "train" not in ds:
-            raise ValueError(f"AIME dataset '{hf_id_aime}' does not contain a 'train' split as expected.")
+        hf_id_aime = aime_params.get("hf_id", "opencompass/AIME2025") # Default to new ID
+        subset_name_aime = aime_params.get("subset_name", "AIME2025-I") # Default to new subset
+        split_name_aime = aime_params.get("split_name", "test") # Default to 'test' split
         
-        df = pd.DataFrame(ds["train"])
-
-        if "Year" not in df.columns:
-            raise ValueError("AIME DataFrame is missing the 'Year' column, required for chronological splitting.")
-        df["Year"] = pd.to_numeric(df["Year"], errors='coerce')
-        df.dropna(subset=["Year"], inplace=True) 
-        df["Year"] = df["Year"].astype(int)
+        print(f"Loading AIME dataset from Hugging Face: ID='{hf_id_aime}', Subset='{subset_name_aime}', Split='{split_name_aime}'")
         
-        split_type = aime_params.get("split_type", "chronological") 
-        max_test_samples = aime_params.get("max_test_samples", 200)
-        test_year_exact = aime_params.get("test_year_exact")
-        
-        if split_type == "chronological":
-            if test_year_exact:
-                test_df = df[df["Year"] == test_year_exact].copy()
-                print(f"AIME dataset: Total instances = {len(df)}, Filtered for exact year {test_year_exact}, Test instances before sampling = {len(test_df)}")
-            else:
-                test_years_start = aime_params.get("test_years_start", 2018)
-                test_df = df[df["Year"] >= test_years_start].copy()
-                print(f"AIME dataset: Total instances = {len(df)}, Chronological split from {test_years_start}, Test instances before sampling = {len(test_df)}")
-
-            if len(test_df) == 0:
-                fallback_message = f"year {test_year_exact}" if test_year_exact else f"{test_years_start}+"
-                print(f"[Warning] AIME: No instances from {fallback_message}. Using last {max_test_samples} instances from all years.")
-                test_df = df.nlargest(max_test_samples, 'Year') 
-                if len(test_df) == 0: raise ValueError("AIME dataset empty after fallback.")
-            
-            sample = test_df.sample(n=min(len(test_df), max_test_samples))
-            print(f"AIME dataset: Sampled {len(sample)} test instances. Year range: {sample['Year'].min()}-{sample['Year'].max() if not sample.empty else 'N/A'}")
-        elif split_type == "random":
-            sample = df.sample(n=min(len(df), max_test_samples))
-            print(f"Dataset {dataset_name} random sample size: {len(sample)}.")
-        else: 
-            sample = df.copy() 
-            print(f"Dataset {dataset_name} using all {len(sample)} instances (no split).")
+        try:
+            # Load the specific subset and split directly
+            ds = load_dataset(hf_id_aime, name=subset_name_aime, split=split_name_aime)
+            sample = pd.DataFrame(ds) # Use all data from the split
+            print(f"Dataset {dataset_name} (Subset: {subset_name_aime}, Split: {split_name_aime}) loaded. Size: {len(sample)}.")
+            if sample.empty:
+                raise ValueError(f"Loaded AIME dataset '{hf_id_aime}' (Subset: {subset_name_aime}, Split: {split_name_aime}) is empty.")
+            # Verify expected columns based on the image: 'question' and 'answer'
+            if "question" not in sample.columns or "answer" not in sample.columns:
+                print(f"[Warning] AIME dataset loaded from {hf_id_aime} (Subset: {subset_name_aime}) is missing 'question' or 'answer' columns. Please check column names. Found columns: {sample.columns.tolist()}")
+        except Exception as e:
+            raise ValueError(f"Failed to load AIME dataset '{hf_id_aime}' (Subset: {subset_name_aime}, Split: {split_name_aime}). Original error: {e}")
 
     elif dataset_name in config.get("gsm_types", []) or dataset_name == "main": # GSM-like
         ds = load_dataset("apple/GSM-Symbolic", dataset_name)
@@ -228,7 +206,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
             math_level = row.get("level") 
             math_type = row.get("type")   
         elif benchmark_name == "AIME":
-            question, expected_answer_val = row["Problem"], str(row["Answer"])
+            question, expected_answer_val = row["question"], str(row["answer"])
             # expected_answer_val is already the clean answer string for AIME
             processed_golden_answer_for_log = str(expected_answer_val).strip()
         else:
