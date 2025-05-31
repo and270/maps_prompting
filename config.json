@@ -14,6 +14,12 @@
             "api_key_env": "OPENAI_API_KEY",
             "supports_sampling_params": true
         },
+        "o4-mini-2025-04-16":{
+            "name": "o4-mini-2025-04-16",
+            "provider": "openai",
+            "api_key_env": "OPENAI_API_KEY",
+            "supports_sampling_params": true
+        },
         "llama-3.1-70b-instruct":{
             "name": "meta-llama/llama-3.1-70b-instruct",
             "provider": "openrouter",
@@ -37,7 +43,13 @@
             "provider": "openrouter",
             "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
-        }   
+        },
+        "google/gemini-2.5-flash-preview-05-20":{
+            "name": "google/gemini-2.5-flash-preview-05-20",
+            "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "supports_sampling_params": true
+        }
     },
     "max_reflection_layers": 3,
     "auto_prompt_model": "same",
