@@ -46,23 +46,38 @@ def prepare_dataset(dataset_name, config):
     elif dataset_name == "AIME":
         aime_params = config.get("AIME_params", {})
         hf_id_aime = aime_params.get("hf_id", "opencompass/AIME2025") # Default to new ID
-        subset_name_aime = aime_params.get("subset_name", "AIME2025-I") # Default to new subset
+        subset_names_aime = aime_params.get("subset_names", ["AIME2025-I"]) # Default to new subset list
         split_name_aime = aime_params.get("split_name", "test") # Default to 'test' split
         
-        print(f"Loading AIME dataset from Hugging Face: ID='{hf_id_aime}', Subset='{subset_name_aime}', Split='{split_name_aime}'")
+        print(f"Loading AIME dataset from Hugging Face: ID='{hf_id_aime}', Subsets='{subset_names_aime}', Split='{split_name_aime}'")
         
-        try:
-            # Load the specific subset and split directly
-            ds = load_dataset(hf_id_aime, name=subset_name_aime, split=split_name_aime)
-            sample = pd.DataFrame(ds) # Use all data from the split
-            print(f"Dataset {dataset_name} (Subset: {subset_name_aime}, Split: {split_name_aime}) loaded. Size: {len(sample)}.")
-            if sample.empty:
-                raise ValueError(f"Loaded AIME dataset '{hf_id_aime}' (Subset: {subset_name_aime}, Split: {split_name_aime}) is empty.")
-            # Verify expected columns based on the image: 'question' and 'answer'
-            if "question" not in sample.columns or "answer" not in sample.columns:
-                print(f"[Warning] AIME dataset loaded from {hf_id_aime} (Subset: {subset_name_aime}) is missing 'question' or 'answer' columns. Please check column names. Found columns: {sample.columns.tolist()}")
-        except Exception as e:
-            raise ValueError(f"Failed to load AIME dataset '{hf_id_aime}' (Subset: {subset_name_aime}, Split: {split_name_aime}). Original error: {e}")
+        all_samples = []
+        for subset_name in subset_names_aime:
+            try:
+                # Load the specific subset and split directly
+                ds = load_dataset(hf_id_aime, name=subset_name, split=split_name_aime)
+                subset_sample_df = pd.DataFrame(ds) # Use all data from the split
+                print(f"Dataset {dataset_name} (Subset: {subset_name}, Split: {split_name_aime}) loaded. Size: {len(subset_sample_df)}.")
+                if subset_sample_df.empty:
+                    print(f"[Warning] Loaded AIME dataset '{hf_id_aime}' (Subset: {subset_name}, Split: {split_name_aime}) is empty.")
+                    # Optionally, continue to the next subset or raise an error
+                    # continue 
+                # Verify expected columns based on the image: 'question' and 'answer'
+                if "question" not in subset_sample_df.columns or "answer" not in subset_sample_df.columns:
+                    print(f"[Warning] AIME dataset loaded from {hf_id_aime} (Subset: {subset_name}) is missing 'question' or 'answer' columns. Please check column names. Found columns: {subset_sample_df.columns.tolist()}")
+                all_samples.append(subset_sample_df)
+            except Exception as e:
+                # Decide if one subset failing should halt everything or just be a warning
+                print(f"[Error] Failed to load AIME dataset '{hf_id_aime}' (Subset: {subset_name}, Split: {split_name_aime}). Original error: {e}. Skipping this subset.")
+                # raise ValueError(f"Failed to load AIME dataset '{hf_id_aime}' (Subset: {subset_name}, Split: {split_name_aime}). Original error: {e}")
+        
+        if not all_samples:
+            raise ValueError(f"Failed to load any AIME subsets for '{hf_id_aime}' with subsets '{subset_names_aime}' and split '{split_name_aime}'.")
+
+        sample = pd.concat(all_samples, ignore_index=True)
+        print(f"Combined AIME dataset loaded. Total size: {len(sample)}.")
+        if sample.empty:
+             raise ValueError(f"Combined AIME dataset from '{hf_id_aime}' (Subsets: {subset_names_aime}, Split: {split_name_aime}) is empty after attempting to load all specified subsets.")
 
     elif dataset_name in config.get("gsm_types", []) or dataset_name == "main": # GSM-like
         ds = load_dataset("apple/GSM-Symbolic", dataset_name)

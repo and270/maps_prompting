@@ -9,7 +9,7 @@ import os # Added for os.getenv
 from llms_api import query_model
 
 
-EIGHT_SHOT_EXAMPLES = """
+COT_TRADITIONAL_8_SHOT_PROMPT = """
 See the examples below to guide you on how your answer format should be:
 
 Q: If John has 3 apples and buys 2 more, how many apples does he have now?
@@ -69,79 +69,12 @@ So, each row contains 36 / 9 = 4 flowers.
 The answer is 4.
 """
 
-MATH_SHOT_EXAMPLES = """
-See the examples below to guide you on how your answer format should be for MATH problems:
+#TODO: REVIAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
+COT_MATH_PROMPT = """
 
-Q: Let $x$ and $y$ be positive real numbers such that $x+y=1$. Find the minimum value of $\frac{1}{x} + \frac{4}{y}$.
-A: Let's think step by step.
-We want to minimize $f(x,y) = \frac{1}{x} + \frac{4}{y}$ subject to $x+y=1$ and $x,y > 0$.
-Since $y=1-x$, we can rewrite $f(x) = \frac{1}{x} + \frac{4}{1-x}$.
-To find the minimum, we can take the derivative with respect to $x$ and set it to 0.
-$f'(x) = -\frac{1}{x^2} - \frac{4(-1)}{(1-x)^2} = -\frac{1}{x^2} + \frac{4}{(1-x)^2}$.
-Set $f'(x)=0$: $\frac{4}{(1-x)^2} = \frac{1}{x^2}$.
-This implies $4x^2 = (1-x)^2$.
-Taking the square root of both sides, $2x = 1-x$ (since $x, 1-x > 0$).
-So $3x = 1$, which means $x = \frac{1}{3}$.
-Then $y = 1 - x = 1 - \frac{1}{3} = \frac{2}{3}$.
-The minimum value is $\frac{1}{1/3} + \frac{4}{2/3} = 3 + \frac{12}{2} = 3 + 6 = 9$.
-To confirm it's a minimum, we check the second derivative:
-$f''(x) = \frac{2}{x^3} + \frac{8}{(1-x)^3}$. For $x \in (0,1)$, $f''(x) > 0$, so it is a minimum.
-The final answer is \\boxed{9}
-
-Q: What is the coefficient of $x^3$ in the expansion of $(2x - 3)^5$?
-A: Let's think step by step.
-We use the binomial theorem, which states that $(a+b)^n = \sum_{k=0}^{n} \binom{n}{k} a^{n-k} b^k$.
-In this case, $a = 2x$, $b = -3$, and $n = 5$.
-We want the term with $x^3$. Let the term be $\binom{5}{k} (2x)^{k} (-3)^{5-k}$. We want $x^k$ to be $x^3$, so $k=3$.
-The term is $\binom{5}{3} (2x)^3 (-3)^{5-3}$.
-$\binom{5}{3} = \frac{5!}{3!2!} = \frac{5 \times 4}{2 \times 1} = 10$.
-$(2x)^3 = 2^3 x^3 = 8x^3$.
-$(-3)^{5-3} = (-3)^2 = 9$.
-So the term is $10 \times (8x^3) \times 9 = 720x^3$.
-The coefficient of $x^3$ is $720$.
-The final answer is \\boxed{720}
 """
 
-AIME_SHOT_EXAMPLES = """
-See the examples below to guide you on how your answer format should be for AIME problems:
-
-Q: Find the smallest positive integer $n$ such that $n^2 + 20n + 19$ is a perfect square.
-A: Let's think step by step.
-Let $n^2 + 20n + 19 = k^2$ for some integer $k > 0$.
-We complete the square: $n^2 + 20n + 19 = (n+10)^2 - 100 + 19 = (n+10)^2 - 81$.
-So, $(n+10)^2 - 81 = k^2$, which means $(n+10)^2 - k^2 = 81$.
-This is a difference of squares: $((n+10) - k)((n+10) + k) = 81$.
-Let $A = (n+10) - k$ and $B = (n+10) + k$. So $AB = 81$.
-Since $n>0$ and $k>0$ (as $(n+10)^2-81=k^2>0 \Rightarrow n+10>9$), $B > A$.
-Also, $A$ and $B$ must be of the same parity. Since $AB=81$ (odd), both $A$ and $B$ must be odd.
-Possible pairs $(A,B)$ with $A<B$:
-1. $A=1, B=81$.
-   $2(n+10) = A+B = 82 \implies n+10 = 41 \implies n=31$.
-   $2k = B-A = 80 \implies k=40$. This is a valid solution.
-2. $A=3, B=27$.
-   $2(n+10) = A+B = 30 \implies n+10 = 15 \implies n=5$.
-   $2k = B-A = 24 \implies k=12$. This is a valid solution.
-The smallest positive integer $n$ is $5$.
-The final answer is 5
-
-Q: Let $N=1234567891011...4344$ be the integer obtained by writing the integers from 1 to 44 in order, one after the other. What is the remainder when $N$ is divided by 45?
-A: Let's think step by step.
-We need $N \pmod{45}$. Since $45 = 5 \times 9$, we find $N \pmod 5$ and $N \pmod 9$.
-$N \pmod 5$: The last digit of $N$ is 4 (from 44). So $N \equiv 4 \pmod 5$.
-$N \pmod 9$: $N$ is congruent to the sum of its digits modulo 9.
-The sum of digits from 1 to 9 is $45 \equiv 0 \pmod 9$.
-For 10 to 19: Sum of digits is $(1 \times 10) + (0+...+9) = 10+45 = 55 \equiv 1 \pmod 9$.
-For 20 to 29: Sum of digits is $(2 \times 10) + (0+...+9) = 20+45 = 65 \equiv 2 \pmod 9$.
-For 30 to 39: Sum of digits is $(3 \times 10) + (0+...+9) = 30+45 = 75 \equiv 3 \pmod 9$.
-For 40 to 44: Digits are (4,0), (4,1), (4,2), (4,3), (4,4). Sum is $4+0+4+1+4+2+4+3+4+4 = 30 \equiv 3 \pmod 9$.
-Total sum of digits $\equiv 0+1+2+3+3 \equiv 9 \equiv 0 \pmod 9$.
-So $N \equiv 0 \pmod 9$.
-We have $N \equiv 4 \pmod 5$ and $N \equiv 0 \pmod 9$.
-$N = 9k$. So $9k \equiv 4 \pmod 5 \implies 4k \equiv 4 \pmod 5 \implies k \equiv 1 \pmod 5$.
-So $k = 5m+1$. $N = 9(5m+1) = 45m+9$.
-$N \equiv 9 \pmod{45}$.
-The final answer is 9
-"""
+AIME_SHOT_EXAMPLES = r"""Please reason step by step, and put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
 
 META_PROMPT_TEMPLATE = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
@@ -186,12 +119,12 @@ Generate the adapted Self-Reflection prompt (remember, you need to create a simi
 
 def generate_cot_prompt(question, benchmark_name):
     if benchmark_name == "MATH":
-        selected_examples = MATH_SHOT_EXAMPLES
+        selected_examples = COT_MATH_PROMPT
     elif benchmark_name == "AIME":
         selected_examples = AIME_SHOT_EXAMPLES
     # Default to EIGHT_SHOT_EXAMPLES for GSM types ("gsm-symbolic", "gsm8-std", "main", "p1", "p2") or any other
     else: 
-        selected_examples = EIGHT_SHOT_EXAMPLES
+        selected_examples = COT_TRADITIONAL_8_SHOT_PROMPT
 
     return f"""{selected_examples}
 Now, look at this question:
@@ -304,7 +237,7 @@ You previously answered this question incorrectly. Reflect on why your answer wa
     return final_reflection_prompt_for_main_model
 
 def generate_reanswer_prompt(question, answer, reflection):
-    return f"""{EIGHT_SHOT_EXAMPLES}
+    return f"""{COT_TRADITIONAL_8_SHOT_PROMPT}
 
 Now, look at this question:
 Question: {question}

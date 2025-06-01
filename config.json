@@ -33,13 +33,13 @@
     },
     "AIME_params": {
         "hf_id": "opencompass/AIME2025",
-        "subset_name": "AIME2025-I",
+        "subset_names": ["AIME2025-I", "AIME2025-II"],
         "split_name": "test",
         "evaluation_type": "exact_string_match"
     },
 
     "test_types": {
-        "run_base": true,
+        "run_base": false,
         "run_cot": true,
         "run_traditional_self_reflection": true,
         "run_multi_layer_self_reflection": true
