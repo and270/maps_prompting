@@ -87,8 +87,13 @@ def prepare_dataset(dataset_name, config):
 # --- Helper functions for MATH evaluation (remain unchanged) ---
 def _normalize_for_sympy(text_expr):
     if text_expr is None: return None
-    norm_expr = text_expr.replace(r"\pi", "pi").replace(r"\cdot", "*").replace(r"\times", "*")
+    # Standardize minus signs
+    norm_expr = text_expr.replace("–", "-").replace("−", "-") # Added to handle en-dash and mathematical minus
+    norm_expr = norm_expr.replace(r"\pi", "pi").replace(r"\cdot", "*").replace(r"\times", "*")
+    # Handle \frac
     norm_expr = re.sub(r"\\frac\s*{\s*(.*?)\s*}\s*{\s*(.*?)\s*}", r"(\1)/(\2)", norm_expr)
+    # Handle \tfrac (added)
+    norm_expr = re.sub(r"\\tfrac\s*{\s*(.*?)\s*}\s*{\s*(.*?)\s*}", r"(\1)/(\2)", norm_expr)
     norm_expr = re.sub(r"\\sqrt\s*{\s*(.*?)\s*}", r"sqrt(\1)", norm_expr)
     norm_expr = re.sub(r"\\text{\s*(.*?)\s*}", r"\1", norm_expr)
     norm_expr = re.sub(r"\\mathrm{\s*(.*?)\s*}", r"\1", norm_expr)
@@ -281,7 +286,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     else: # cot_score == 1
                          print("\n--- Traditional Self-Reflection (Skipped, CoT Correct) ---")
                          print(f"Score (from CoT): {cot_score}")
-                         reflection_data_traditional_method.append({"layer": None, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": None, "auto_prompt_used": None})
+                         reflection_data_traditional_method.append({"layer": None, "score": cot_score, "response": cot_response, "reflection_prompt": None, "full_response": None, "auto_prompt_used": "cot_correct_skipped_reflection"})
 
                 reflection_data_multi_layer__method = []
                 if config["test_types"]["run_multi_layer_self_reflection"]:
@@ -441,13 +446,44 @@ def save_results(results_df, filename="experiment_results.csv"):
             "traditional_reflection_score": None, "traditional_reflection_response": None,
             "traditional_reflection_prompt": None, "traditional_reflection_full_response": None, "traditional_auto_prompt_used": None
         }
+        # Always add the base row which contains base and CoT scores
         expanded_results.append(base_row.copy())
+
+        # Add traditional reflection data as a separate effective "row" if it exists
         for trad_item in row.get("traditional_reflection_data", []):
-            if trad_item: expanded_results.append({**base_row, **trad_item, "reflection_layer": "trad"}) # Mark layer for trad
+            if trad_item:
+                trad_specific_row = base_row.copy() # Start with common data
+                trad_specific_row.update({
+                    "reflection_layer": "trad", # Special marker for traditional reflection
+                    "traditional_reflection_score": trad_item.get("score"),
+                    "traditional_reflection_response": trad_item.get("response"),
+                    "traditional_reflection_prompt": trad_item.get("reflection_prompt"),
+                    "traditional_reflection_full_response": trad_item.get("full_response"),
+                    "traditional_auto_prompt_used": trad_item.get("auto_prompt_used")
+                })
+                expanded_results.append(trad_specific_row)
+
+        # Add multi-layer reflection data, each layer as an effective "row"
         for layer_data in row.get("reflection_data", []):
-            if layer_data: expanded_results.append({**base_row, **layer_data})
+            if layer_data:
+                layer_specific_row = base_row.copy() # Start with common data
+                layer_specific_row.update({
+                    "reflection_layer": layer_data.get("layer"),
+                    "reflection_score": layer_data.get("score"),
+                    "reflection_response": layer_data.get("response"),
+                    "reflection_prompt": layer_data.get("reflection_prompt"),
+                    "reflection_full_response": layer_data.get("full_response"), # This was the reflection itself
+                    "reanswer_full_response": layer_data.get("reanswer_full_response"), # This was the re-answer attempt
+                    "auto_prompt_used": layer_data.get("auto_prompt_used")
+                })
+                expanded_results.append(layer_specific_row)
     try:
-        pd.DataFrame(expanded_results).to_csv(filename, index=False)
+        # Filter out rows that are purely for base/CoT if traditional or multi-layer data exists for that question
+        # This is to avoid double counting in the groupby later if we are not careful
+        # However, the current analyze_results seems to handle this by taking .iloc[0] for base/cot.
+        # Let's stick to the logic that produces one row per actual evaluation event (base/cot, trad, each layer)
+        final_df = pd.DataFrame(expanded_results)
+        final_df.to_csv(filename, index=False)
         print(f"Results saved to {filename}")
     except Exception as e:
         print(f"Error saving to CSV: {e}. Fallback to JSON.")
