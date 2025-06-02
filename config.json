@@ -1,25 +1,28 @@
 {
-    "datasets": ["MATH", "AIME"],
+    "datasets": ["AIME"],
     "gsm_types": [],
     "models": {
         "o4-mini-2025-04-16":{
             "name": "o4-mini-2025-04-16",
             "provider": "openai",
             "api_key_env": "OPENAI_API_KEY",
-            "supports_sampling_params": false
-        },
-        "gpt-4.1-2025-04-14":{
-            "name": "gpt-4.1-2025-04-14",
-            "provider": "openai",
-            "api_key_env": "OPENAI_API_KEY",
-            "supports_sampling_params": false
+            "supports_sampling_params": false,
+            "thinking_effort_support": true,
+            "reasoning_effort": "medium"
         },
         "google/gemini-2.5-flash-preview-05-20":{
             "name": "google/gemini-2.5-flash-preview-05-20",
             "provider": "openrouter",
             "api_key_env": "OPEN_ROUTER_API_KEY",
-            "supports_sampling_params": false
+            "supports_sampling_params": false            
+        },
+        "google/gemini-2.5-pro-preview":{
+            "name": "google/gemini-2.5-pro-preview",
+            "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "supports_sampling_params": false            
         }
+
     },
     "max_reflection_layers": 3,
     "auto_prompt_model": "same",

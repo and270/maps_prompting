@@ -205,7 +205,7 @@ def evaluate_response(response_text, expected_answer_text, benchmark_name, confi
         return 0
 
 
-def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, api_provider, supports_sampling_params):
+def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, api_provider, supports_sampling_params, thinking_effort_support=False, reasoning_effort="medium"):
     results = []
     total_questions_in_sample = len(sample)
     for i, (idx, row) in enumerate(sample.iterrows()):
@@ -254,7 +254,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     print("\n--- Base Model ---")
                     base_full_response = query_model(api_key, question, model, 
                                                      supports_sampling_params=supports_sampling_params, 
-                                                     api_provider=api_provider)
+                                                     api_provider=api_provider,
+                                                     thinking_effort_support=thinking_effort_support,
+                                                     reasoning_effort=reasoning_effort)
                     if benchmark_name == "MATH": base_response = extract_answer_math(base_full_response)
                     else: base_response = extract_answer_gsm_format(base_full_response)
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -268,7 +270,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                     cot_prompt = generate_cot_prompt(question, benchmark_name)
                     cot_full_response = query_model(api_key, cot_prompt, model, 
                                                     supports_sampling_params=supports_sampling_params, 
-                                                    api_provider=api_provider)
+                                                    api_provider=api_provider,
+                                                    thinking_effort_support=thinking_effort_support,
+                                                    reasoning_effort=reasoning_effort)
                     if benchmark_name == "MATH": cot_response = extract_answer_math(cot_full_response)
                     else: cot_response = extract_answer_gsm_format(cot_full_response)
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -284,13 +288,17 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                         trad_reflect_prompt = generate_auto_reflection_traditional_prompt(question, cot_full_response)
                         trad_reflect_resp = query_model(api_key, trad_reflect_prompt, model, 
                                                         supports_sampling_params=supports_sampling_params, 
-                                                        api_provider=api_provider)
+                                                        api_provider=api_provider,
+                                                        thinking_effort_support=thinking_effort_support,
+                                                        reasoning_effort=reasoning_effort)
                         print(f"Reflection Response (last 300 chars): {get_last_n(trad_reflect_resp, 300)}")
                         
                         trad_reanswer_prompt = generate_reanswer_prompt(question, cot_response, trad_reflect_resp)
                         trad_reanswer_resp = query_model(api_key, trad_reanswer_prompt, model, 
                                                        supports_sampling_params=supports_sampling_params, 
-                                                       api_provider=api_provider)
+                                                       api_provider=api_provider,
+                                                       thinking_effort_support=thinking_effort_support,
+                                                       reasoning_effort=reasoning_effort)
                         trad_score = evaluate_response(trad_reanswer_resp, expected_answer_val, benchmark_name, config, current_instance_id)
                         trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
                         print(f"Re-answer Full Response (last 300 chars): {get_last_n(trad_reanswer_resp, 300)}")
@@ -323,6 +331,8 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                             auto_prompt_api_key_to_use: str
                             auto_prompt_api_provider_to_use: str
                             auto_prompt_supports_sampling_to_use = True
+                            auto_prompt_thinking_effort_support = False
+                            auto_prompt_reasoning_effort = "medium"
 
                             if auto_prompt_model_config_key == "same" or auto_prompt_model_config_key not in config.get("models", {}):
                                 if auto_prompt_model_config_key != "same":
@@ -330,6 +340,8 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 auto_prompt_model_name_to_use = model # Main model name
                                 auto_prompt_api_key_to_use = api_key # Main model API key
                                 auto_prompt_api_provider_to_use = api_provider # Main model API provider
+                                auto_prompt_thinking_effort_support = thinking_effort_support
+                                auto_prompt_reasoning_effort = reasoning_effort
                                 # Find the main model in config to get its supports_sampling_params
                                 for model_details_val in config.get("models", {}).values():
                                     if model_details_val.get("name") == model:
@@ -340,6 +352,8 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 auto_prompt_model_name_to_use = specific_model_details["name"]
                                 auto_prompt_api_provider_to_use = specific_model_details["provider"]
                                 auto_prompt_supports_sampling_to_use = specific_model_details.get("supports_sampling_params", True)
+                                auto_prompt_thinking_effort_support = specific_model_details.get("thinking_effort_support", False)
+                                auto_prompt_reasoning_effort = specific_model_details.get("reasoning_effort", "medium")
                                 api_key_env_var = specific_model_details.get("api_key_env")
                                 if not api_key_env_var:
                                     print(f"[Error] 'api_key_env' not defined for auto-prompt model '{auto_prompt_model_config_key}'. Cannot use for meta-prompting. Halting reflection for this instance.")
@@ -358,7 +372,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 auto_prompt_model_name_to_use,          
                                 auto_prompt_api_key_to_use,         
                                 auto_prompt_api_provider_to_use,    
-                                auto_prompt_supports_sampling_to_use
+                                auto_prompt_supports_sampling_to_use,
+                                auto_prompt_thinking_effort_support,
+                                auto_prompt_reasoning_effort
                             )
 
                             if not reflection_instructions_prompt:
@@ -373,7 +389,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 reflection_instructions_prompt,
                                 model,
                                 supports_sampling_params=supports_sampling_params,
-                                api_provider=api_provider
+                                api_provider=api_provider,
+                                thinking_effort_support=thinking_effort_support,
+                                reasoning_effort=reasoning_effort
                             )
                             print(f"Reflection Actual Text (last 300 chars): {get_last_n(reflection_actual_text, 300)}")
 
@@ -387,7 +405,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 reanswer_prompt,
                                 model,
                                 supports_sampling_params=supports_sampling_params,
-                                api_provider=api_provider
+                                api_provider=api_provider,
+                                thinking_effort_support=thinking_effort_support,
+                                reasoning_effort=reasoning_effort
                             )
 
                             if not reanswer_full_response:
@@ -600,6 +620,10 @@ def worker(task_args):
         print(f"[Error] API key not found for model {model_info['name']} using env var {model_info['api_key_env']}. Skipping.")
         return
 
+    # Extract thinking/reasoning parameters from model config
+    thinking_effort_support = model_info.get("thinking_effort_support", False)
+    reasoning_effort = model_info.get("reasoning_effort", "medium")
+
     results_df = run_benchmark(
         sample=sample,
         api_key=api_key,
@@ -608,7 +632,9 @@ def worker(task_args):
         dataset_name=dataset_name,
         benchmark_name=benchmark_name_for_task,
         api_provider=model_info["provider"],
-        supports_sampling_params=model_info.get("supports_sampling_params", True)
+        supports_sampling_params=model_info.get("supports_sampling_params", True),
+        thinking_effort_support=thinking_effort_support,
+        reasoning_effort=reasoning_effort
     )
     
     if not results_df.empty:
