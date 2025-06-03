@@ -40,7 +40,10 @@
         "split_name": "test",
         "evaluation_type": "exact_string_match"
     },
-
+    "answer_temperature": 0.0,
+    "answer_top_p": 1.0,
+    "meta_prompt_generation_temperature": 1.0,
+    "meta_prompt_generation_top_p": 1.0,
     "test_types": {
         "run_base": false,
         "run_cot": true,

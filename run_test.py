@@ -256,7 +256,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                                      supports_sampling_params=supports_sampling_params, 
                                                      api_provider=api_provider,
                                                      thinking_effort_support=thinking_effort_support,
-                                                     reasoning_effort=reasoning_effort)
+                                                     reasoning_effort=reasoning_effort,
+                                                     temperature=config["answer_temperature"],
+                                                     top_p=config["answer_top_p"])
                     if benchmark_name == "MATH": base_response = extract_answer_math(base_full_response)
                     else: base_response = extract_answer_gsm_format(base_full_response)
                     base_score = evaluate_response(base_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -272,7 +274,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                                     supports_sampling_params=supports_sampling_params, 
                                                     api_provider=api_provider,
                                                     thinking_effort_support=thinking_effort_support,
-                                                    reasoning_effort=reasoning_effort)
+                                                    reasoning_effort=reasoning_effort,
+                                                    temperature=config["answer_temperature"],
+                                                    top_p=config["answer_top_p"])
                     if benchmark_name == "MATH": cot_response = extract_answer_math(cot_full_response)
                     else: cot_response = extract_answer_gsm_format(cot_full_response)
                     cot_score = evaluate_response(cot_full_response, expected_answer_val, benchmark_name, config, current_instance_id)
@@ -290,7 +294,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                                         supports_sampling_params=supports_sampling_params, 
                                                         api_provider=api_provider,
                                                         thinking_effort_support=thinking_effort_support,
-                                                        reasoning_effort=reasoning_effort)
+                                                        reasoning_effort=reasoning_effort,
+                                                        temperature=config["answer_temperature"],
+                                                        top_p=config["answer_top_p"])
                         print(f"Reflection Response (last 300 chars): {get_last_n(trad_reflect_resp, 300)}")
                         
                         trad_reanswer_prompt = generate_reanswer_prompt(question, cot_response, trad_reflect_resp)
@@ -298,7 +304,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                                        supports_sampling_params=supports_sampling_params, 
                                                        api_provider=api_provider,
                                                        thinking_effort_support=thinking_effort_support,
-                                                       reasoning_effort=reasoning_effort)
+                                                       reasoning_effort=reasoning_effort,
+                                                       temperature=config["answer_temperature"],
+                                                       top_p=config["answer_top_p"])
                         trad_score = evaluate_response(trad_reanswer_resp, expected_answer_val, benchmark_name, config, current_instance_id)
                         trad_extracted = extract_answer_math(trad_reanswer_resp) if benchmark_name == "MATH" else extract_answer_gsm_format(trad_reanswer_resp)
                         print(f"Re-answer Full Response (last 300 chars): {get_last_n(trad_reanswer_resp, 300)}")
@@ -366,6 +374,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
                             print(f"[DEBUG] Multi-Layer Reflection Layer {layer+1}: Generating reflection prompt with {len(previous_extracted_incorrect_answers)} previous incorrect extracted answer(s).")
 
+
                             reflection_instructions_prompt = generate_auto_reflection_auto_adapt_prompt(
                                 question,
                                 previous_extracted_incorrect_answers, # Pass extracted answers
@@ -374,7 +383,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 auto_prompt_api_provider_to_use,    
                                 auto_prompt_supports_sampling_to_use,
                                 auto_prompt_thinking_effort_support,
-                                auto_prompt_reasoning_effort
+                                auto_prompt_reasoning_effort,
+                                auto_prompt_temperature=config["meta_prompt_generation_temperature"],
+                                auto_prompt_top_p=config["meta_prompt_generation_top_p"]
                             )
 
                             if not reflection_instructions_prompt:
@@ -391,7 +402,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 supports_sampling_params=supports_sampling_params,
                                 api_provider=api_provider,
                                 thinking_effort_support=thinking_effort_support,
-                                reasoning_effort=reasoning_effort
+                                reasoning_effort=reasoning_effort,
+                                temperature=config["answer_temperature"],
+                                top_p=config["answer_top_p"]
                             )
                             print(f"Reflection Actual Text (last 300 chars): {get_last_n(reflection_actual_text, 300)}")
 
@@ -407,7 +420,9 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                                 supports_sampling_params=supports_sampling_params,
                                 api_provider=api_provider,
                                 thinking_effort_support=thinking_effort_support,
-                                reasoning_effort=reasoning_effort
+                                reasoning_effort=reasoning_effort,
+                                temperature=config["answer_temperature"],
+                                top_p=config["answer_top_p"]
                             )
 
                             if not reanswer_full_response:

@@ -5,7 +5,7 @@ import os
 
 load_dotenv(override=True)
 
-def query_model(api_key, prompt, model, supports_sampling_params=True, api_provider="openrouter", max_retries=3, thinking_effort_support=False, reasoning_effort="medium"):
+def query_model(api_key, prompt, model, supports_sampling_params=True, api_provider="openrouter", max_retries=3, thinking_effort_support=False, reasoning_effort="medium", temperature=0.0, top_p=1.0):
     for attempt in range(max_retries):
         try:
             if api_provider == "openrouter":
@@ -71,8 +71,8 @@ def query_model(api_key, prompt, model, supports_sampling_params=True, api_provi
                 # Add sampling parameters only if supported
                 if supports_sampling_params:
                     api_params.update({
-                        "temperature": 0,
-                        "top_p": 1,
+                        "temperature": temperature,
+                        "top_p": top_p,
                     })
                 
                 chat_completion = client.chat.completions.create(**api_params)
