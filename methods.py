@@ -69,8 +69,8 @@ So, each row contains 36 / 9 = 4 flowers.
 The answer is 4.
 """
 
-#TODO: REVISAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
-COT_MATH_PROMPT = """"""
+
+COT_MATH_PROMPT = r"""Please reason step by step, and put your final answer within \boxed{{}}"""
 
 AIME_SHOT_EXAMPLES = r"""Please reason step by step, and put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
 
@@ -118,7 +118,6 @@ Generate the adapted Self-Reflection prompt (remember, you need to create a simi
 def generate_cot_prompt(question, benchmark_name):
     if benchmark_name == "MATH":
         base_prompt = COT_MATH_PROMPT
-        #TODO: REVISAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
         return f"""{base_prompt} {question}"""
     elif benchmark_name == "AIME":
         base_prompt = AIME_SHOT_EXAMPLES

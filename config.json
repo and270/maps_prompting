@@ -1,5 +1,5 @@
 {
-    "datasets": ["AIME"],
+    "datasets": ["AIME", "MATH"],
     "gsm_types": [],
     "models": {
         "o4-mini-2025-04-16":{
@@ -29,8 +29,9 @@
     "run_analysis": true,
 
     "MATH_params": {
-        "hf_id": "nlile/hendrycks-MATH-benchmark",
+        "hf_id": "HuggingFaceH4/MATH-500",
         "evaluation_type": "exact_match_latex_normalized",
+        "split_name": "test",
         "max_test_samples": 100
     },
     "AIME_params": {
