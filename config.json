@@ -10,16 +10,15 @@
             "thinking_effort_support": true,
             "reasoning_effort": "medium"
         },
-        "google/gemini-2.5-flash-preview-05-20":{
-            "name": "google/gemini-2.5-flash-preview-05-20",
-            "provider": "openrouter",
-            "api_key_env": "OPEN_ROUTER_API_KEY",
-            "supports_sampling_params": false            
-        },
         "google/gemini-2.5-pro-preview":{
-            "name": "google/gemini-2.5-pro-preview",
-            "provider": "openrouter",
-            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "name": "gemini-2.5-pro-preview-05-06",
+            "provider": "google",
+            "api_key_env": "GOOGLE_API_KEY",
+            "supports_sampling_params": false            
+        },"gemini-2.5-flash-preview-05-20":{
+            "name": "gemini-2.5-flash-preview-05-20",
+            "provider": "google",
+            "api_key_env": "GOOGLE_API_KEY",
             "supports_sampling_params": false            
         }
 

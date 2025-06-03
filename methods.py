@@ -69,10 +69,8 @@ So, each row contains 36 / 9 = 4 flowers.
 The answer is 4.
 """
 
-#TODO: REVIAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
-COT_MATH_PROMPT = """
-
-"""
+#TODO: REVISAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
+COT_MATH_PROMPT = """"""
 
 AIME_SHOT_EXAMPLES = r"""Please reason step by step, and put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
 
@@ -119,14 +117,17 @@ Generate the adapted Self-Reflection prompt (remember, you need to create a simi
 
 def generate_cot_prompt(question, benchmark_name):
     if benchmark_name == "MATH":
-        selected_examples = COT_MATH_PROMPT
+        base_prompt = COT_MATH_PROMPT
+        #TODO: REVISAR PROMPT OFICIAL MATHARENA PARA ESSE BENCH
+        return f"""{base_prompt} {question}"""
     elif benchmark_name == "AIME":
-        selected_examples = AIME_SHOT_EXAMPLES
+        base_prompt = AIME_SHOT_EXAMPLES
+        return f"""{base_prompt} {question}"""
     # Default to EIGHT_SHOT_EXAMPLES for GSM types ("gsm-symbolic", "gsm8-std", "main", "p1", "p2") or any other
     else: 
-        selected_examples = COT_TRADITIONAL_8_SHOT_PROMPT
+        base_prompt = COT_TRADITIONAL_8_SHOT_PROMPT
 
-    return f"""{selected_examples}
+    return f"""{base_prompt}
 Now, look at this question:
 Q: {question}
 A: Let's think step by step..."""
