@@ -1,17 +1,17 @@
 {
-    "datasets": ["AIME", "MATH", "main"],
-    "gsm_types": ["gsm8-std"],
+    "datasets": ["AIME", "MATH", "main",  "p1", "p2"],
+    "gsm_types": ["gsm-symbolic", "gsm8-std"],
     "models": {
         "google/gemini-2.5-pro-preview":{
             "name": "gemini-2.5-pro-preview-05-06",
             "provider": "google",
             "api_key_env": "GOOGLE_API_KEY",
-            "supports_sampling_params": false            
+            "supports_sampling_params": true            
         },"gemini-2.5-flash-preview-05-20":{
             "name": "gemini-2.5-flash-preview-05-20",
             "provider": "google",
             "api_key_env": "GOOGLE_API_KEY",
-            "supports_sampling_params": false            
+            "supports_sampling_params": true            
         },
         "o4-mini-2025-04-16":{
             "name": "o4-mini-2025-04-16",
