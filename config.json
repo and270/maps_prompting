@@ -1,15 +1,7 @@
 {
-    "datasets": ["AIME", "MATH"],
-    "gsm_types": [],
+    "datasets": ["AIME", "MATH", "main"],
+    "gsm_types": ["gsm8-std"],
     "models": {
-        "o4-mini-2025-04-16":{
-            "name": "o4-mini-2025-04-16",
-            "provider": "openai",
-            "api_key_env": "OPENAI_API_KEY",
-            "supports_sampling_params": false,
-            "thinking_effort_support": true,
-            "reasoning_effort": "medium"
-        },
         "google/gemini-2.5-pro-preview":{
             "name": "gemini-2.5-pro-preview-05-06",
             "provider": "google",
@@ -20,8 +12,15 @@
             "provider": "google",
             "api_key_env": "GOOGLE_API_KEY",
             "supports_sampling_params": false            
+        },
+        "o4-mini-2025-04-16":{
+            "name": "o4-mini-2025-04-16",
+            "provider": "openai",
+            "api_key_env": "OPENAI_API_KEY",
+            "supports_sampling_params": false,
+            "thinking_effort_support": true,
+            "reasoning_effort": "medium"
         }
-
     },
     "max_reflection_layers": 3,
     "auto_prompt_model": "same",
@@ -44,6 +43,9 @@
     "answer_top_p": 1.0,
     "meta_prompt_generation_temperature": 1.0,
     "meta_prompt_generation_top_p": 1.0,
+
+    "use_same_meta_prompt_for_all_layers": false,
+
     "test_types": {
         "run_base": false,
         "run_cot": true,

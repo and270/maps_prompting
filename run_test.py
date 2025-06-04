@@ -330,6 +330,7 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                         current_ans_ext = cot_response # Extracted answer from the last attempt (initially CoT)
                         previous_extracted_incorrect_answers = [cot_response] # List of EXTRACTED incorrect answers
 
+                        past_layer_reflection_prompt=None
                         for layer in range(config["max_reflection_layers"]):
                             print(f"\n--- Layer {layer+1} ---")
                             auto_prompt_model_config_key = config.get("auto_prompt_model", "same")
@@ -374,19 +375,21 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
 
                             print(f"[DEBUG] Multi-Layer Reflection Layer {layer+1}: Generating reflection prompt with {len(previous_extracted_incorrect_answers)} previous incorrect extracted answer(s).")
 
-
-                            reflection_instructions_prompt = generate_auto_reflection_auto_adapt_prompt(
-                                question,
-                                previous_extracted_incorrect_answers, # Pass extracted answers
-                                auto_prompt_model_name_to_use,          
-                                auto_prompt_api_key_to_use,         
-                                auto_prompt_api_provider_to_use,    
-                                auto_prompt_supports_sampling_to_use,
-                                auto_prompt_thinking_effort_support,
-                                auto_prompt_reasoning_effort,
-                                auto_prompt_temperature=config["meta_prompt_generation_temperature"],
-                                auto_prompt_top_p=config["meta_prompt_generation_top_p"]
-                            )
+                            if not config["use_same_meta_prompt_for_all_layers"] or past_layer_reflection_prompt is None:
+                                reflection_instructions_prompt = generate_auto_reflection_auto_adapt_prompt(
+                                    question,
+                                    previous_extracted_incorrect_answers, # Pass extracted answers
+                                    auto_prompt_model_name_to_use,          
+                                    auto_prompt_api_key_to_use,         
+                                    auto_prompt_api_provider_to_use,    
+                                    auto_prompt_supports_sampling_to_use,
+                                    auto_prompt_thinking_effort_support,
+                                    auto_prompt_reasoning_effort,
+                                    auto_prompt_temperature=config["meta_prompt_generation_temperature"],
+                                    auto_prompt_top_p=config["meta_prompt_generation_top_p"]
+                                )
+                            else:
+                                reflection_instructions_prompt = past_layer_reflection_prompt
 
                             if not reflection_instructions_prompt:
                                 print(f"[Warning] Failed to generate reflection instructions for layer {layer+1}. Skipping layer.")
