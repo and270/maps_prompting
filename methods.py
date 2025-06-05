@@ -4,7 +4,7 @@ import re
 from dotenv import load_dotenv
 from queue import Queue
 from concurrent.futures import ThreadPoolExecutor
-import os # Added for os.getenv
+import os
 
 from llms_api import query_model
 
@@ -236,9 +236,6 @@ Your initial Chain-of-Thought answer (extracted result) was: {previous_incorrect
 
 You previously answered this question incorrectly. Reflect on why your answer was incorrect and identify the type of error. Then, solve the problem again step-by-step with corrections. Your new answer MUST be different from your previous answers because they were all incorrect."""
     
-    # The detailed logging of this final_reflection_prompt_for_main_model that was here previously has been removed as per user request.
-    # The caller (run_test.py) will log this prompt (or a snippet of it) if needed.
-
     return final_reflection_prompt_for_main_model
 
 def generate_reanswer_prompt(question, answer, reflection):
@@ -254,7 +251,6 @@ Reflection: {reflection}
 Provide your corrected reasoning and answer in the examples format.
 """
 
-# Function to extract the numerical answer from the GSM format
 def extract_answer_gsm_format(response):
     try:
         if not response:
@@ -341,7 +337,7 @@ def extract_answer_math(response_text):
         extracted_text = re.sub(r"\\left\{", r"{", extracted_text)
         extracted_text = re.sub(r"\\right\}", r"}", extracted_text)
 
-        spacing_cmds = [r"\\,", r"\\!", r"\\s", r"\\quad", r"\\qquad", r"~_*"] # Corrected \s to r"\\s"
+        spacing_cmds = [r"\\,", r"\\!", r"\\s", r"\\quad", r"\\qquad", r"~_*"]
         for cmd in spacing_cmds:
             extracted_text = extracted_text.replace(cmd, "")
         
@@ -391,7 +387,7 @@ def extract_answer_aime(response_text):
             try:
                 # Attempt to convert to float
                 float_val = float(last_num_str)
-                # If it's an integer (e.g., 16.0), convert to int string "16"
+                # If it's an integer, convert to int string "16"
                 if float_val.is_integer():
                     return str(int(float_val))
                 else:

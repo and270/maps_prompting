@@ -7,10 +7,9 @@ import pandas as pd
 from datasets import load_dataset
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import math # Added for MATH evaluation
-import sympy # Added for MATH evaluation
+import math 
+import sympy
 
-# Import query_model and your prompt-generation helpers
 from chatbot import load_config
 from llms_api import query_model
 from methods import (
@@ -532,9 +531,7 @@ def save_results(results_df, filename="experiment_results.csv"):
                 expanded_results.append(layer_specific_row)
     try:
         # Filter out rows that are purely for base/CoT if traditional or multi-layer data exists for that question
-        # This is to avoid double counting in the groupby later if we are not careful
-        # However, the current analyze_results seems to handle this by taking .iloc[0] for base/cot.
-        # Let's stick to the logic that produces one row per actual evaluation event (base/cot, trad, each layer)
+        # This is to avoid double counting in the groupby later if we are not careful\
         final_df = pd.DataFrame(expanded_results)
         final_df.to_csv(filename, index=False)
         print(f"Results saved to {filename}")
