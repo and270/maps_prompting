@@ -37,6 +37,18 @@
             "provider": "openrouter",
             "api_key_env": "OPEN_ROUTER_API_KEY",
             "supports_sampling_params": true
+        },
+        "deepseek-v3":{
+            "name": "deepseek/deepseek-chat",
+            "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "supports_sampling_params": true
+        },
+        "mistral-small-3.1-24b-instruct":{
+            "name": "mistralai/mistral-small-3.1-24b-instruct",
+            "provider": "openrouter",
+            "api_key_env": "OPEN_ROUTER_API_KEY",
+            "supports_sampling_params": true
         }
     },
     "max_reflection_layers": 3,
