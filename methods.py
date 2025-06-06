@@ -70,9 +70,11 @@ The answer is 4.
 """
 
 
+BASE_MATH_PROMPT = r"""Put your final answer within \boxed{{}}"""
 COT_MATH_PROMPT = r"""Please reason step by step, and put your final answer within \boxed{{}}"""
 
-AIME_SHOT_EXAMPLES = r"""Please reason step by step, and put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
+BASE_AIME_PROMPT = r"""Put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
+COT_AIME_PROMPT = r"""Please reason step by step, and put your final answer within \boxed{{}}.The answer is an integer between 0 and 999 inclusive."""
 
 META_PROMPT_TEMPLATE = """You are an expert in adapting instructions for language models. Your task is to create a personalized Self-Reflection prompt for a model that is trying to solve a mathematical problem. You will receive the original question and should adapt the prompt based on it.
 Your task is to modify the Self-Reflection template so that it is as specific and helpful as possible for the problem. Focus on aspects such as:
@@ -120,7 +122,7 @@ def generate_cot_prompt(question, benchmark_name):
         base_prompt = COT_MATH_PROMPT
         return f"""{base_prompt} {question}"""
     elif benchmark_name == "AIME":
-        base_prompt = AIME_SHOT_EXAMPLES
+        base_prompt = COT_AIME_PROMPT
         return f"""{base_prompt} {question}"""
     # Default to EIGHT_SHOT_EXAMPLES for GSM types ("gsm-symbolic", "gsm8-std", "main", "p1", "p2") or any other
     else: 

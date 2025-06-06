@@ -13,6 +13,8 @@ import sympy
 from chatbot import load_config
 from llms_api import query_model
 from methods import (
+    BASE_AIME_PROMPT,
+    BASE_MATH_PROMPT,
     extract_answer_gsm_format,
     extract_answer_math, 
     extract_answer_aime,
@@ -251,7 +253,8 @@ def run_benchmark(sample, api_key, config, model, dataset_name, benchmark_name, 
                 
                 if config["test_types"]["run_base"]:
                     print("\n--- Base Model ---")
-                    base_full_response = query_model(api_key, question, model, 
+                    base_prompt = (question + "\n" + BASE_MATH_PROMPT) if benchmark_name == "MATH" else (question + "\n" + BASE_AIME_PROMPT if benchmark_name == "AIME" else question)
+                    base_full_response = query_model(api_key, base_prompt, model, 
                                                      supports_sampling_params=supports_sampling_params, 
                                                      api_provider=api_provider,
                                                      thinking_effort_support=thinking_effort_support,
