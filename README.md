@@ -4,6 +4,8 @@ This repository provides a reference implementation of the **Multi-Layered Self-
 
 The accompanying [paper](#citation) (details to be updated with new benchmark results) demonstrates how this method can significantly boost accuracy across various benchmarks and LLMs.
 
+This framework is designed to test the intrinsic reasoning capabilities of LLMs. As such, all models are run without access to external tools like code interpreters or calculators.
+
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
@@ -127,15 +129,13 @@ The script `run_test.py` is primarily driven by `config.json`. This file allows 
     *   **`"AIME_params"`**:
         ```json
         "AIME_params": {
-            "hf_id": "gneubig/aime-1983-2024",
+            "hf_id": "opencompass/AIME2025",
             "evaluation_type": "exact_string_match", 
-            "data_file": "AIME_Dataset_1983_2024.csv", // From the HF dataset
-            "split_type": "chronological", // "chronological", "random", or "none"
-            "test_years_start": 2018,      // For chronological split
-            "max_test_samples": 200        // Max samples for test set
+            "subset_names": ["AIME2025-I", "AIME2025-II"], 
+            "split_name": "test"
         },
         ```
-        For AIME, `"split_type": "chronological"` creates a test set from years `>= test_years_start`.
+        For AIME, the framework loads data from the specified `subset_names` and `split_name` of the Hugging Face dataset.
 
 
 *   **`"max_reflection_layers"`**: Number of reflection layers (e.g., 3).
@@ -152,9 +152,9 @@ The script `run_test.py` is primarily driven by `config.json`. This file allows 
 - Ensure you have internet access when running for the first time to download these datasets.
 
 ### AIME Specifics
-- The AIME dataset (`gneubig/aime-1983-2024`) contains a "Year" column.
-- If `split_type` in `AIME_params` is set to `"chronological"` (default), the `prepare_dataset` function will use problems from `test_years_start` onwards for the test set, up to `max_test_samples`. This allows testing on more recent problems.
-- If set to `"random"`, it performs a random sample. If `"none"`, it uses all available data.
+- The AIME dataset is loaded using the `opencompass/AIME2025` Hugging Face dataset ID by default.
+- The `prepare_dataset` function loads specific subsets (e.g., `AIME2025-I`) and splits (e.g., `test`) as defined in `AIME_params` in the `config.json` file.
+- Unlike previous versions, the logic for chronological splitting based on years has been removed in favor of the more standard Hugging Face dataset loading mechanism.
 
 ---
 
@@ -202,6 +202,9 @@ streamlit run chatbot.py
     *   The traditional, static reflection prompt is also available as a fallback or alternative strategy.
 4.  **Iterative Refinement**: The LLM attempts to re-solve the problem based on its reflection, up to `max_reflection_layers`.
 
+### Tool-Free Evaluation
+It is important to note that all language models are queried without access to any external tools (e.g., code interpreters, calculators). This ensures that the reasoning capabilities being evaluated are intrinsic to the model itself.
+
 ---
 
 ## Supported Benchmarks
@@ -213,9 +216,9 @@ streamlit run chatbot.py
   - Loaded via Hugging Face (`nlile/hendrycks-MATH-benchmark`).
   - Evaluation: Multi-stage (SymPy, numerical, string normalization).
 - **AIME**: American Invitational Mathematics Examination problems.
-  - Loaded via Hugging Face (`gneubig/aime-1983-2024`).
+  - Loaded via Hugging Face (`opencompass/AIME2025`).
   - Evaluation: Exact numerical string matching.
-  - Supports chronological splitting for test set creation.
+  - The framework loads data by a specified subset and split (e.g., `AIME2025-I`, `test` split).
 
 ---
 
@@ -225,7 +228,7 @@ If you find this repository or our research helpful, please cite:
 *(Details of the original paper and any updates/new papers covering the extended benchmarks will be provided here.)*
 
 ```
-@article{LoureiroSilva2025MultilayerSelfReflection,
+@article{Loureiro2025MultilayerSelfReflection,
   title={Enhancing Multi-Step Mathematical Reasoning in Large Language Models 
          with Multi-Layered Self-Reflection and Auto-Prompting},
   author={Silva, André de Souza Loureiro and Valverde Rebaza, Jorge Carlos},
