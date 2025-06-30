@@ -228,13 +228,16 @@ If you find this repository or our research helpful, please cite:
 *(Details of the original paper and any updates/new papers covering the extended benchmarks will be provided here.)*
 
 ```
-@article{Loureiro2025MultilayerSelfReflection,
-  title={Enhancing Multi-Step Mathematical Reasoning in Large Language Models 
-         with Multi-Layered Self-Reflection and Auto-Prompting},
-  author={Silva, André de Souza Loureiro and Valverde Rebaza, Jorge Carlos},
-  year={2025},
-  # journal={To be submitted/Published in...},
-  # url={Link to paper}
+@inproceedings{Loureiro2025MultilayerSelfReflection,
+title = {Advancing Multi-Step Mathematical Reasoning in Large Language Models
+through Multi-Layered Self-Reflection with Auto-Prompting},
+author = {André de Souza Loureiro and Jorge Valverde-Rebaza and Julieta Noguez and David Escarcega and Ricardo Marcacini},
+booktitle = {Proceedings of the European Conference on Machine Learning and Principles
+and Practice of Knowledge Discovery in Databases (ECML PKDD)},
+series = {Lecture Notes in Computer Science},
+publisher = {Springer},
+year = {2025},
+note = {To appear.}
 }
 ```
 
