@@ -222,6 +222,22 @@ It is important to note that all language models are queried without access to a
 
 ---
 
+## 📄 Preprint
+
+A preprint version of this work is now available on **arXiv**:
+
+> **MAPS: Multi-Layered Self-Reflection with Auto-Prompting**  
+> Enhancing multi-step mathematical reasoning in large language models  
+> 📚 Accepted for publication at ECML PKDD 2025
+
+🔗 [Read the full paper on arXiv](https://arxiv.org/abs/2506.23888)
+
+This version includes the full method description, experimental setup, benchmarks, and analysis.  
+Feel free to cite it, share your feedback, or use it as a reference for related work.
+
+
+---
+
 ## Citation
 
 If you find this repository or our research helpful, please cite:
