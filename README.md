@@ -181,8 +181,10 @@ To run analysis independently on existing CSV results:
 
 Results for MATH and AIME  will be included in this summary.
 
-### 3. Interactive Demo (Legacy)
-An interactive Streamlit demo (`chatbot.py`) is available for GSM8K-style problems. It has not yet been updated to fully support the structured inputs/outputs of MATH or AIME but can be used for general exploration of reflection with simpler math problems.
+### 3. Interactive Demo
+An interactive Streamlit demo (`chatbot.py`) is available to showcase the full MAPS methodology. It allows for real-time interaction with the models and supports all configured benchmarks, including **GSM-Symbolic**, **MATH**, **AIME**, and a **General** mode for open-ended questions.
+
+You can select the model, benchmark, and even override API keys directly in the user interface.
 ```bash
 streamlit run chatbot.py
 ```
