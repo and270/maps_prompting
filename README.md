@@ -224,37 +224,43 @@ It is important to note that all language models are queried without access to a
 
 ---
 
-## 📄 Preprint
 
-A preprint version of this work is now available on **arXiv**:
 
-> **MAPS: Multi-Layered Self-Reflection with Auto-Prompting**  
-> Enhancing multi-step mathematical reasoning in large language models  
-> 📚 Accepted for publication at ECML PKDD 2025
+## 📄 Publication at ECML-PKDD 2025
 
+This paper has been officially published in the ECML-PKDD 2025 Proceedings (Lecture Notes in Computer Science, Springer):
+
+> **MAPS: Multi-Layered Self-Reflection with Auto-Prompting**
+> Enhancing multi-step mathematical reasoning in large language models
+📘 Proceedings of the European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases (ECML-PKDD 2025)
+
+🔗 [Read the published version on Springer](https://link.springer.com/chapter/10.1007/978-3-032-06078-5_12)
+
+The paper details the full MAPS method, experimental setup, benchmarks, and analysis.
+Feel free to cite, discuss, or build upon this work in your own research.
+
+A preprint version is also available for open access:
 🔗 [Read the full paper on arXiv](https://arxiv.org/abs/2506.23888)
-
-This version includes the full method description, experimental setup, benchmarks, and analysis.  
-Feel free to cite it, share your feedback, or use it as a reference for related work.
 
 
 ---
 
-## Citation
+## 📚 Citation
 
-If you find this repository or our research helpful, please cite:
-*(Details of the original paper and any updates/new papers covering the extended benchmarks will be provided here.)*
+Please cite as:
 
 ```
-@inproceedings{Loureiro:MAPS_LLMs:2025,
-title = {Advancing Multi-Step Mathematical Reasoning in Large Language Models
-through Multi-Layered Self-Reflection with Auto-Prompting},
-author = {André de Souza Loureiro and Jorge Valverde-Rebaza and Julieta Noguez and David Escarcega and Ricardo Marcacini},
-booktitle = {Proceedings of the European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases (ECML PKDD)},
+@inproceedings{Loureiro:MAPS_LLMs:2026,
+title = {Advancing Multi-Step Mathematical Reasoning in Large Language Models through Multi-Layered Self-Reflection with Auto-Prompting},
+author = {de Souza Loureiro, Andr{\'e} and Valverde-Rebaza, Jorge and Noguez, Julieta and Escarcega, David and Marcacini, Ricardo},
+booktitle = {Machine Learning and Knowledge Discovery in Databases. Research Track. ECML PKDD 2025},
 series = {Lecture Notes in Computer Science},
-publisher = {Springer},
-year = {2025},
-note = {To appear.}
+publisher = {Springer Nature Switzerland},
+address={Cham},
+volume = {16016},
+pages={205--223},
+isbn={978-3-032-06078-5},
+year = {2026}
 }
 ```
 
